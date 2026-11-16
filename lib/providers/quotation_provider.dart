@@ -466,9 +466,79 @@ class QuotationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<Quotation?> saveActiveQuotation() async {
+  /// Builds a complete in-memory Quotation model from active screen state
+  Quotation buildCurrentQuotation() {
+    return Quotation(
+      id: _editingQuotationId ?? 'LOCAL-${DateTime.now().millisecondsSinceEpoch}',
+      quotationNumber: _quotationNumber,
+      date: _quotationDate,
+      customerId: _customerId,
+      customerName: _customerName.trim().isEmpty ? 'Walk-in Customer' : _customerName.trim(),
+      customerPhone: _customerPhone,
+      customerEmail: _customerEmail,
+      customerAddress: _customerAddress,
+      customerGstin: _customerGstin,
+      presentationMode: _presentationMode,
+      quotationType: _quotationType,
+      documentTitle: _documentTitle,
+      preparedBy: _preparedBy,
+      rateGivenBy: _rateGivenBy,
+      totalNet: totalNetAmt,
+      totalGst: totalGstAmt,
+      installationCharges: totalInstallationAmt,
+      deliveryCharges: _deliveryCharges,
+      packingCharges: _packingCharges,
+      previousCharges: _previousCharges,
+      packingChargeLabel: _packingChargeLabel,
+      deliveryChargeLabel: _deliveryChargeLabel,
+      previousChargeLabel: _previousChargeLabel,
+      overallDiscount: _overallDiscount,
+      finalAmount: finalAmount,
+      status: 'ACTIVE',
+      items: List<QuotationItem>.from(_items),
+    );
+  }
+
+  /// Duplicates an existing quotation with a new quote number & date
+  void duplicateQuotation(String quoteId, {String prefix = 'HW/26-27/'}) {
+    final original = _quotations.firstWhere((q) => q.id == quoteId);
+    _editingQuotationId = null;
+    final randomNum = (1000 + (DateTime.now().millisecondsSinceEpoch % 9000)).toString();
+    _quotationNumber = '$prefix$randomNum';
+    _quotationDate = DateTime.now();
+    _customerId = original.customerId;
+    _customerName = original.customerName;
+    _customerPhone = original.customerPhone ?? '';
+    _customerEmail = original.customerEmail ?? '';
+    _customerAddress = original.customerAddress ?? '';
+    _customerGstin = original.customerGstin ?? '';
+    _presentationMode = original.presentationMode;
+    _quotationType = original.quotationType;
+    _documentTitle = original.documentTitle;
+    _preparedBy = original.preparedBy ?? '';
+    _rateGivenBy = original.rateGivenBy ?? '';
+    _gstMode = original.totalGst > 0 ? 'WITH_GST' : 'WITHOUT_GST';
+
+    _deliveryCharges = original.deliveryCharges;
+    _packingCharges = original.packingCharges;
+    _previousCharges = original.previousCharges;
+    _deliveryChargeLabel = original.deliveryChargeLabel;
+    _packingChargeLabel = original.packingChargeLabel;
+    _previousChargeLabel = original.previousChargeLabel;
+    _overallDiscount = original.overallDiscount;
+
+    _items = original.items.map((it) {
+      return it.copyWith(id: null);
+    }).toList();
+
+    notifyListeners();
+  }
+
+  Future<Quotation?> saveActiveQuotation({bool fallbackToLocal = true}) async {
     _isLoading = true;
     notifyListeners();
+
+    final localQuote = buildCurrentQuotation();
 
     try {
       final payload = <String, dynamic>{
@@ -515,6 +585,18 @@ class QuotationProvider extends ChangeNotifier {
       return saved;
     } catch (e) {
       _isLoading = false;
+      if (fallbackToLocal) {
+        // Offline / Connection error fallback: save locally so PDF generation & editing never block!
+        final idx = _quotations.indexWhere((q) => q.id == localQuote.id || q.quotationNumber == localQuote.quotationNumber);
+        if (idx != -1) {
+          _quotations[idx] = localQuote;
+        } else {
+          _quotations.insert(0, localQuote);
+          _totalCount++;
+        }
+        notifyListeners();
+        return localQuote;
+      }
       notifyListeners();
       return null;
     }

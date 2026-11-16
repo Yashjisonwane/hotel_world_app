@@ -44,6 +44,12 @@ class ApiService {
           }
           return handler.next(options);
         },
+        onError: (DioException error, handler) async {
+          if (error.response?.statusCode == 401) {
+            await StorageService.clearSession();
+          }
+          return handler.next(error);
+        },
       ),
     );
   }

@@ -238,12 +238,25 @@ class _CustomersScreenState extends State<CustomersScreen> {
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    if (c.phone != null && c.phone!.isNotEmpty)
+                                    if (c.phone != null && c.phone!.isNotEmpty) ...[
                                       IconButton(
                                         icon: const Icon(Icons.phone, color: AppColors.success, size: 20),
                                         tooltip: 'Call Customer',
                                         onPressed: () => launchUrl(Uri.parse('tel:${c.phone}')),
                                       ),
+                                      IconButton(
+                                        icon: const Icon(Icons.chat_bubble_outline, color: Color(0xFF16A34A), size: 20),
+                                        tooltip: 'WhatsApp Chat',
+                                        onPressed: () {
+                                          final clean = c.phone!.replaceAll(RegExp(r'\D'), '');
+                                          final fullNumber = clean.length == 10 ? '91$clean' : clean;
+                                          launchUrl(
+                                            Uri.parse('https://wa.me/$fullNumber?text=Hello%20${Uri.encodeComponent(c.companyName)},%20Hotel%20World%20greetings!'),
+                                            mode: LaunchMode.externalApplication,
+                                          );
+                                        },
+                                      ),
+                                    ],
                                     IconButton(
                                       icon: const Icon(Icons.add_shopping_cart, color: AppColors.primary700, size: 20),
                                       tooltip: 'Create Quote for this Customer',

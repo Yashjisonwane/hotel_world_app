@@ -2,6 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../constants/app_colors.dart';
 import '../../models/quotation_item.dart';
 import '../../providers/quotation_provider.dart';
@@ -246,15 +248,20 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
       return;
     }
 
-    final saved = await qp.saveActiveQuotation();
+    final saved = await qp.saveActiveQuotation(fallbackToLocal: true);
     if (saved != null && mounted) {
+      if (saved.id.startsWith('LOCAL-')) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Quotation locally save ho gayi hai (Offline Mode). PDF preview open ho raha hai.'),
+            backgroundColor: Color(0xFFD97706),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
       Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => QuotationPreviewScreen(quotation: saved)),
-      );
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Quotation save karne me error aya. Kripya connection check karein.'), backgroundColor: AppColors.error),
       );
     }
   }
@@ -264,7 +271,14 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
     _syncCharges();
 
     final qp = context.read<QuotationProvider>();
-    final saved = await qp.saveActiveQuotation();
+    if (qp.items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kripya kam se kam 1 item quotation me add karein.'), backgroundColor: AppColors.error),
+      );
+      return;
+    }
+
+    final saved = await qp.saveActiveQuotation(fallbackToLocal: true);
     if (saved != null && mounted) {
       final settings = context.read<SettingsProvider>().settings;
       try {
@@ -279,6 +293,67 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
     }
   }
 
+  Future<void> _handleExcelExport() async {
+    _syncCustomerData();
+    _syncCharges();
+
+    final qp = context.read<QuotationProvider>();
+    if (qp.items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Kripya kam se kam 1 item quotation me add karein.'), backgroundColor: AppColors.error),
+      );
+      return;
+    }
+
+    try {
+      final quote = qp.buildCurrentQuotation();
+      final buffer = StringBuffer();
+      // UTF-8 BOM so Microsoft Excel & Google Sheets open cleanly with proper Indian formatting
+      buffer.write('\uFEFF');
+      buffer.writeln('HOTEL WORLD QUOTATION');
+      buffer.writeln('Quote No,"${quote.quotationNumber}",Date,"${DateFormat('dd/MM/yyyy').format(quote.date)}"');
+      buffer.writeln('Customer Name,"${quote.customerName}",Phone,"${quote.customerPhone ?? ''}"');
+      buffer.writeln('Address,"${quote.customerAddress ?? ''}",GSTIN,"${quote.customerGstin ?? ''}"');
+      buffer.writeln('');
+      buffer.writeln('S.N.,Item Name,Section,Specification,Size,Qty,Unit,Rate (Rs),Net Amt (Rs),GST %,Gross Amt (Rs)');
+
+      for (int i = 0; i < quote.items.length; i++) {
+        final it = quote.items[i];
+        final name = it.name.replaceAll('"', '""');
+        final sec = (it.section ?? '').replaceAll('"', '""');
+        final spec = (it.specification ?? '').replaceAll('"', '""');
+        final size = (it.size ?? '').replaceAll('"', '""');
+        buffer.writeln('${i + 1},"$name","$sec","$spec","$size",${it.quantity},"${it.unit}",${it.price},${it.netAmount},${it.gstRate}%,${it.grossAmount}');
+      }
+
+      buffer.writeln('');
+      buffer.writeln(',,,,,,,,,Total Net Amount (Rs),${quote.totalNet}');
+      buffer.writeln(',,,,,,,,,Total GST (Rs),${quote.totalGst}');
+      if (quote.deliveryCharges > 0) buffer.writeln(',,,,,,,,,Delivery Charges (Rs),${quote.deliveryCharges}');
+      if (quote.packingCharges > 0) buffer.writeln(',,,,,,,,,Packing Charges (Rs),${quote.packingCharges}');
+      if (quote.previousCharges > 0) buffer.writeln(',,,,,,,,,Previous Balance (Rs),${quote.previousCharges}');
+      if (quote.overallDiscount > 0) buffer.writeln(',,,,,,,,,Discount (Rs),-${quote.overallDiscount}');
+      buffer.writeln(',,,,,,,,,FINAL PAYABLE (Rs),${quote.finalAmount}');
+
+      final tempDir = await getTemporaryDirectory();
+      final cleanNum = quote.quotationNumber.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+      final file = File('${tempDir.path}/Quotation_$cleanNum.csv');
+      await file.writeAsString(buffer.toString());
+
+      await Share.shareXFiles(
+        [XFile(file.path, mimeType: 'text/csv')],
+        text: 'Hotel World Quotation ${quote.quotationNumber} for ${quote.customerName}',
+        subject: 'Quotation ${quote.quotationNumber}',
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Excel export error: $e'), backgroundColor: AppColors.error),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final qp = context.watch<QuotationProvider>();
@@ -286,7 +361,34 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
     final isMachinery = qp.quotationType == 'MACHINERY';
     final isPhotoMode = qp.presentationMode == 'PHOTO';
 
-    return Scaffold(
+    return PopScope(
+      canPop: qp.items.isEmpty,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldDiscard = await showDialog<bool>(
+          context: context,
+          builder: (dCtx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('Discard Quotation?', style: TextStyle(fontWeight: FontWeight.bold)),
+            content: const Text('Aapki banayi hui quotation save nahi hui hai. Kya aap bina save kiye bahar jaana chahte hain?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dCtx, false),
+                child: const Text('Wapas Likhein', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+                onPressed: () => Navigator.pop(dCtx, true),
+                child: const Text('Discard Karein', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        );
+        if (shouldDiscard == true && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: Text(
@@ -1272,11 +1374,7 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
 
               // [ 📊 Excel ] Button (Emerald)
               InkWell(
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Excel export ready'), duration: Duration(seconds: 1)),
-                  );
-                },
+                onTap: _handleExcelExport,
                 child: Container(
                   height: 38,
                   padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -1350,6 +1448,7 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
         ),
       ),
     ),
-  );
+  ),
+);
 }
 }

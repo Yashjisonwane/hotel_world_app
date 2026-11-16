@@ -87,11 +87,27 @@ class PdfInvoiceService {
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(16),
+        footer: (context) => pw.Container(
+          alignment: pw.Alignment.centerRight,
+          margin: const pw.EdgeInsets.only(top: 4),
+          child: pw.Text(
+            'Page ${context.pageNumber} of ${context.pagesCount}',
+            style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey700),
+          ),
+        ),
         build: (context) {
           return [
+            // ==============================================================
+            // 0-3. DOCUMENT HEADER & META
+            // ==============================================================
             pw.Container(
-              decoration: pw.BoxDecoration(
-                border: pw.Border.all(color: PdfColors.black, width: 2),
+              decoration: const pw.BoxDecoration(
+                border: pw.Border(
+                  top: pw.BorderSide(color: PdfColors.black, width: 2),
+                  left: pw.BorderSide(color: PdfColors.black, width: 2),
+                  right: pw.BorderSide(color: PdfColors.black, width: 2),
+                  bottom: pw.BorderSide(color: PdfColors.black, width: 2),
+                ),
               ),
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.stretch,
@@ -300,12 +316,21 @@ class PdfInvoiceService {
                       ),
                     ),
                   ),
+                ],
+              ),
+            ),
 
-                  // ==============================================================
-                  // 4. ITEMS TABLE (With Black Grid Borders Matching Image)
-                  // ==============================================================
-                  pw.Table(
-                    border: pw.TableBorder.all(color: PdfColors.black, width: 1),
+            // ==============================================================
+            // 4. ITEMS TABLE (Flows and splits across pages automatically)
+            // ==============================================================
+            pw.Table(
+              border: const pw.TableBorder(
+                left: pw.BorderSide(color: PdfColors.black, width: 2),
+                right: pw.BorderSide(color: PdfColors.black, width: 2),
+                bottom: pw.BorderSide(color: PdfColors.black, width: 1.5),
+                horizontalInside: pw.BorderSide(color: PdfColors.black, width: 1),
+                verticalInside: pw.BorderSide(color: PdfColors.black, width: 1),
+              ),
                     columnWidths: isPhotoMode
                         ? {
                             0: const pw.FixedColumnWidth(26), // S.N.
@@ -465,8 +490,19 @@ class PdfInvoiceService {
                   ),
 
                   // ==============================================================
-                  // 5. TOTAL NET AMT & GST ROW (Exact matching Image)
+                  // 5-7. SUMMARY, CHARGES, TOTAL PAYABLE & FOOTER
                   // ==============================================================
+                  pw.Container(
+                    decoration: const pw.BoxDecoration(
+                      border: pw.Border(
+                        left: pw.BorderSide(color: PdfColors.black, width: 2),
+                        right: pw.BorderSide(color: PdfColors.black, width: 2),
+                        bottom: pw.BorderSide(color: PdfColors.black, width: 2),
+                      ),
+                    ),
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+                      children: [
                   if (hasGst)
                     pw.Container(
                       decoration: const pw.BoxDecoration(

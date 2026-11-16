@@ -248,6 +248,26 @@ class _QuotationListScreenState extends State<QuotationListScreen> {
                                             },
                                           ),
                                           IconButton(
+                                            icon: const Icon(Icons.copy_all_outlined, size: 19, color: AppColors.primary700),
+                                            tooltip: 'Duplicate Quotation',
+                                            onPressed: () {
+                                              final prefix = settingsProv.settings.quotePrefix.isNotEmpty
+                                                  ? settingsProv.settings.quotePrefix
+                                                  : 'HW/26-27/';
+                                              qp.duplicateQuotation(q.id, prefix: prefix);
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(
+                                                  content: Text('Duplicated as new draft from ${q.quotationNumber}'),
+                                                  backgroundColor: AppColors.primary800,
+                                                ),
+                                              );
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(builder: (_) => const CreateQuotationScreen()),
+                                              );
+                                            },
+                                          ),
+                                          IconButton(
                                             icon: const Icon(Icons.edit_outlined, size: 19, color: AppColors.slate600),
                                             tooltip: 'Edit',
                                             onPressed: () {
