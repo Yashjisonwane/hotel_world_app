@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/product.dart';
 import '../services/api_service.dart';
+import '../services/storage_service.dart';
 
 class ProductProvider extends ChangeNotifier {
   final ApiService _apiService;
@@ -15,8 +17,25 @@ class ProductProvider extends ChangeNotifier {
   String _searchQuery = '';
 
   ProductProvider(this._apiService) {
+    _loadFromCache();
     loadCategories();
     fetchProducts(refresh: true);
+  }
+
+  void _loadFromCache() {
+    try {
+      final rawCats = StorageService.getString(StorageService.cacheCategoriesKey);
+      if (rawCats != null && rawCats.isNotEmpty) {
+        final List cats = jsonDecode(rawCats);
+        _categories = ['ALL', ...cats.map((e) => e.toString())];
+      }
+      final rawProds = StorageService.getString(StorageService.cacheProductsKey);
+      if (rawProds != null && rawProds.isNotEmpty) {
+        final List prods = jsonDecode(rawProds);
+        _products = prods.map((e) => Product.fromJson(Map<String, dynamic>.from(e))).toList();
+        _totalCount = _products.length;
+      }
+    } catch (_) {}
   }
 
   List<Product> get products => _products;
@@ -30,6 +49,7 @@ class ProductProvider extends ChangeNotifier {
     try {
       final cats = await _apiService.getCategories();
       _categories = ['ALL', ...cats];
+      StorageService.setString(StorageService.cacheCategoriesKey, jsonEncode(cats));
       notifyListeners();
     } catch (_) {}
   }
@@ -47,11 +67,15 @@ class ProductProvider extends ChangeNotifier {
   Future<void> fetchProducts({bool refresh = false}) async {
     if (refresh) {
       _currentPage = 1;
-      _products = [];
+      if (_searchQuery.isNotEmpty) {
+        _products = [];
+      }
     }
 
-    _isLoading = true;
-    notifyListeners();
+    if (_products.isEmpty) {
+      _isLoading = true;
+      notifyListeners();
+    }
 
     try {
       final res = await _apiService.getProducts(
@@ -64,6 +88,12 @@ class ProductProvider extends ChangeNotifier {
       final List<Product> loaded = res['products'] as List<Product>;
       if (refresh) {
         _products = loaded;
+        if (_searchQuery.isEmpty && _selectedCategory == 'ALL') {
+          StorageService.setString(
+            StorageService.cacheProductsKey,
+            jsonEncode(_products.map((p) => p.toJson()).toList()),
+          );
+        }
       } else {
         _products.addAll(loaded);
       }
@@ -79,6 +109,15 @@ class ProductProvider extends ChangeNotifier {
     if (_isLoading || _currentPage >= _totalPages) return;
     _currentPage++;
     await fetchProducts(refresh: false);
+  }
+
+  void _syncCache() {
+    if (_searchQuery.isEmpty && _selectedCategory == 'ALL') {
+      StorageService.setString(
+        StorageService.cacheProductsKey,
+        jsonEncode(_products.map((p) => p.toJson()).toList()),
+      );
+    }
   }
 
   Future<bool> saveProduct({
@@ -118,12 +157,14 @@ class ProductProvider extends ChangeNotifier {
         final idx = _products.indexWhere((p) => p.id == id);
         if (idx != -1) {
           _products[idx] = updated;
+          _syncCache();
           notifyListeners();
         }
       } else {
         final created = await _apiService.createProduct(data);
         _products.insert(0, created);
         _totalCount++;
+        _syncCache();
         notifyListeners();
       }
       return true;
@@ -137,6 +178,7 @@ class ProductProvider extends ChangeNotifier {
       await _apiService.deleteProduct(id);
       _products.removeWhere((p) => p.id == id);
       _totalCount = (_totalCount > 0) ? _totalCount - 1 : 0;
+      _syncCache();
       notifyListeners();
       return true;
     } catch (_) {

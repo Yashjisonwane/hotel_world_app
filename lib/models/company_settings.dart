@@ -123,5 +123,27 @@ class CompanySettings {
       standardTerms: terms,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'companyName': companyName,
+      'tagline': tagline,
+      'logoUrl': logoUrl,
+      'phone': phone,
+      'email': email,
+      'website': website,
+      'address': address,
+      'gstin': gstin,
+      'pan': pan,
+      'quotePrefix': quotePrefix,
+      'defaultValidityDays': defaultValidityDays,
+      'bankName': bankName,
+      'accountNumber': accountNumber,
+      'ifscCode': ifscCode,
+      'branch': branch,
+      'standardTerms': standardTerms.map((t) => t.toJson()).toList(),
+    };
+  }
 }
 

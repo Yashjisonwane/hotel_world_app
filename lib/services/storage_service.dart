@@ -45,5 +45,15 @@ class StorageService {
     await _prefs?.remove(ApiConstants.prefAuthTokenKey);
     await _prefs?.remove(ApiConstants.prefUserDataKey);
   }
+
+  // Generic instant offline-first cache helpers
+  static const String cacheQuotationsKey = 'hw_cache_quotations';
+  static const String cacheProductsKey = 'hw_cache_products';
+  static const String cacheCategoriesKey = 'hw_cache_categories';
+  static const String cacheCustomersKey = 'hw_cache_customers';
+  static const String cacheSettingsKey = 'hw_cache_settings';
+
+  static String? getString(String key) => _prefs?.getString(key);
+  static Future<void> setString(String key, String val) async => await _prefs?.setString(key, val);
 }
 

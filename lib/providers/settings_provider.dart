@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../models/company_settings.dart';
 import '../services/api_service.dart';
@@ -11,7 +12,20 @@ class SettingsProvider extends ChangeNotifier {
 
   SettingsProvider(this._apiService) {
     _backendUrl = StorageService.getBackendUrl();
+    _loadFromCache();
     loadSettings();
+  }
+
+  void _loadFromCache() {
+    try {
+      final raw = StorageService.getString(StorageService.cacheSettingsKey);
+      if (raw != null && raw.isNotEmpty) {
+        final map = jsonDecode(raw);
+        if (map is Map<String, dynamic>) {
+          _settings = CompanySettings.fromJson(map);
+        }
+      }
+    } catch (_) {}
   }
 
   CompanySettings get settings => _settings;
@@ -19,13 +33,12 @@ class SettingsProvider extends ChangeNotifier {
   String get backendUrl => _backendUrl;
 
   Future<void> loadSettings() async {
-    _isLoading = true;
-    notifyListeners();
     try {
-      _settings = await _apiService.getSettings();
+      final fresh = await _apiService.getSettings();
+      _settings = fresh;
+      StorageService.setString(StorageService.cacheSettingsKey, jsonEncode(fresh.toJson()));
+      notifyListeners();
     } catch (_) {}
-    _isLoading = false;
-    notifyListeners();
   }
 
   Future<void> updateBackendUrl(String newUrl) async {

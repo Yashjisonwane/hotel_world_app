@@ -1,9 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../models/quotation.dart';
 import '../models/quotation_item.dart';
 import '../models/customer.dart';
 import '../models/product.dart';
 import '../services/api_service.dart';
+import '../services/storage_service.dart';
 
 class QuotationProvider extends ChangeNotifier {
   final ApiService _apiService;
@@ -42,7 +44,19 @@ class QuotationProvider extends ChangeNotifier {
   double _overallDiscount = 0.0;
 
   QuotationProvider(this._apiService) {
+    _loadFromCache();
     fetchQuotations(refresh: true);
+  }
+
+  void _loadFromCache() {
+    try {
+      final raw = StorageService.getString(StorageService.cacheQuotationsKey);
+      if (raw != null && raw.isNotEmpty) {
+        final List list = jsonDecode(raw);
+        _quotations = list.map((item) => Quotation.fromJson(Map<String, dynamic>.from(item))).toList();
+        _totalCount = _quotations.length;
+      }
+    } catch (_) {}
   }
 
   // Getters
@@ -110,10 +124,14 @@ class QuotationProvider extends ChangeNotifier {
   Future<void> fetchQuotations({bool refresh = false}) async {
     if (refresh) {
       _currentPage = 1;
-      _quotations = [];
+      if (_searchQuery.isNotEmpty) {
+        _quotations = [];
+      }
     }
-    _isLoading = true;
-    notifyListeners();
+    if (_quotations.isEmpty) {
+      _isLoading = true;
+      notifyListeners();
+    }
 
     try {
       final res = await _apiService.getQuotations(
@@ -125,6 +143,12 @@ class QuotationProvider extends ChangeNotifier {
       final List<Quotation> loaded = res['quotations'] as List<Quotation>;
       if (refresh) {
         _quotations = loaded;
+        if (_searchQuery.isEmpty && _selectedStatus == 'ALL') {
+          StorageService.setString(
+            StorageService.cacheQuotationsKey,
+            jsonEncode(_quotations.map((q) => q.toJson()).toList()),
+          );
+        }
       } else {
         _quotations.addAll(loaded);
       }
@@ -151,6 +175,12 @@ class QuotationProvider extends ChangeNotifier {
       await _apiService.deleteQuotation(id);
       _quotations.removeWhere((q) => q.id == id);
       _totalCount = (_totalCount > 0) ? _totalCount - 1 : 0;
+      if (_searchQuery.isEmpty && _selectedStatus == 'ALL') {
+        StorageService.setString(
+          StorageService.cacheQuotationsKey,
+          jsonEncode(_quotations.map((q) => q.toJson()).toList()),
+        );
+      }
       notifyListeners();
     } catch (_) {}
   }
@@ -579,6 +609,10 @@ class QuotationProvider extends ChangeNotifier {
         _quotations.insert(0, saved);
         _totalCount++;
       }
+      StorageService.setString(
+        StorageService.cacheQuotationsKey,
+        jsonEncode(_quotations.map((q) => q.toJson()).toList()),
+      );
 
       _isLoading = false;
       notifyListeners();
@@ -594,6 +628,10 @@ class QuotationProvider extends ChangeNotifier {
           _quotations.insert(0, localQuote);
           _totalCount++;
         }
+        StorageService.setString(
+          StorageService.cacheQuotationsKey,
+          jsonEncode(_quotations.map((q) => q.toJson()).toList()),
+        );
         notifyListeners();
         return localQuote;
       }
