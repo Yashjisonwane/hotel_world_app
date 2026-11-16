@@ -7,6 +7,7 @@ import '../customers/customers_screen.dart';
 import '../settings/settings_screen.dart';
 import '../users/users_management_screen.dart';
 import '../auth/login_screen.dart';
+import '../../services/app_update_service.dart';
 
 class MoreHubScreen extends StatelessWidget {
   const MoreHubScreen({super.key});
@@ -145,21 +146,6 @@ class MoreHubScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            _buildMenuCard(
-              context,
-              icon: Icons.business_center_rounded,
-              iconBg: const Color(0xFFFEF3C7),
-              iconColor: const Color(0xFFD97706),
-              title: 'Company Profile & GST',
-              subtitle: '${settings.settings.companyName.isNotEmpty ? settings.settings.companyName : "Hotel World"} • GST & Bank Settings',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                );
-              },
-            ),
-
             if (auth.isAdmin) ...[
               const SizedBox(height: 24),
               const Text(
@@ -183,6 +169,21 @@ class MoreHubScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const UsersManagementScreen()),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildMenuCard(
+                context,
+                icon: Icons.business_center_rounded,
+                iconBg: const Color(0xFFFEF3C7),
+                iconColor: const Color(0xFFD97706),
+                title: 'Company Profile & GST',
+                subtitle: '${settings.settings.companyName.isNotEmpty ? settings.settings.companyName : "Hotel World"} • GST & Bank Settings',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
                   );
                 },
               ),
@@ -253,6 +254,18 @@ class MoreHubScreen extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+            const SizedBox(height: 12),
+
+            // In-App Auto Update Checker Card
+            _buildMenuCard(
+              context,
+              icon: Icons.system_update_rounded,
+              iconBg: const Color(0xFFEFF6FF),
+              iconColor: const Color(0xFF2563EB),
+              title: 'Check for App Updates',
+              subtitle: 'Installed: v${AppUpdateService.currentVersion} • Tap to check latest cloud release',
+              onTap: () => AppUpdateService.checkForUpdate(context, silent: false),
             ),
             const SizedBox(height: 16),
 

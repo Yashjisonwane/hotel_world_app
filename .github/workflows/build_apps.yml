@@ -1,15 +1,20 @@
-name: Build Hotel World Apps (Android & iOS)
+name: Build & Release Hotel World Apps (Android & iOS)
 
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-  workflow_dispatch: # Allows manual 1-click trigger from GitHub Actions tab
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release Tag (e.g. v1.0.0 or v1.0.1)'
+        required: false
+        default: 'v1.0.0'
 
 jobs:
   build-android:
-    name: 📱 Build Android APK
+    name: 📱 Build Android APK (Permanent Key)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -30,14 +35,17 @@ jobs:
       - name: Install Packages
         run: flutter pub get
 
-      - name: Build Release APK
+      - name: Build Release APK with Permanent Keystore
         run: flutter build apk --release
 
-      - name: Upload Android APK
+      - name: Copy & Name APK
+        run: cp build/app/outputs/flutter-apk/app-release.apk HotelWorld-Release.apk
+
+      - name: Upload Android APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: HotelWorld-Android-Release-APK
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: HotelWorld-Release.apk
 
   build-ios:
     name: 🍎 Build iOS IPA
@@ -64,9 +72,61 @@ jobs:
           cp -r build/ios/iphoneos/Runner.app Payload/
           zip -r HotelWorld-iOS.ipa Payload
 
-      - name: Upload iOS IPA
+      - name: Upload iOS IPA Artifact
         uses: actions/upload-artifact@v4
         with:
           name: HotelWorld-iOS-IPA
           path: HotelWorld-iOS.ipa
 
+  publish-release:
+    name: 🚀 Publish GitHub Release
+    needs: [build-android, build-ios]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Android Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: HotelWorld-Android-Release-APK
+          path: release-files
+
+      - name: Download iOS Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: HotelWorld-iOS-IPA
+          path: release-files
+
+      - name: Determine Release Tag
+        id: vars
+        run: |
+          if [ -n "${{ github.event.inputs.tag_name }}" ]; then
+            echo "TAG=${{ github.event.inputs.tag_name }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          else
+            echo "TAG=v1.0.0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create or Update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.vars.outputs.TAG }}
+          name: Hotel World App ${{ steps.vars.outputs.TAG }}
+          body: |
+            Hotel World Official Production Release (${{ steps.vars.outputs.TAG }})
+            
+            📱 **Android**: `HotelWorld-Release.apk` (Signed with Permanent Keystore - Zero Package Conflict)
+            🍎 **iOS**: `HotelWorld-iOS.ipa` (For Sideloadly / TestFlight)
+            
+            - Permanent Keystore signature applied
+            - In-App Auto-Update active
+            - Real-time cloud sync with Render backend & MySQL database
+            - Full Machinery, GST & Photo quotation modes
+          draft: false
+          prerelease: false
+          files: |
+            release-files/HotelWorld-Release.apk
+            release-files/HotelWorld-iOS.ipa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

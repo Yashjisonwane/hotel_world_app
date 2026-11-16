@@ -1217,8 +1217,6 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
       // TOTAL AMOUNT: ₹ 0 | [ 📥 PDF ] | [ 📊 Excel ] | [ 🔗 ] | [ ✓ Save & View ]
       // ==============================================================
       bottomNavigationBar: Container(
-        height: 62,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: AppColors.white,
           border: const Border(top: BorderSide(color: Color(0xFFCBD5E1), width: 1.5)),
@@ -1227,9 +1225,13 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
           ],
         ),
         child: SafeArea(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
+          top: false,
+          child: Container(
+            height: 56,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
               // TOTAL AMOUNT
               Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1347,6 +1349,7 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

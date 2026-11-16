@@ -19,7 +19,9 @@ class User {
     this.isActive = true,
   });
 
-  bool get isAdmin => role.toUpperCase() == 'ADMIN' || role.toUpperCase() == 'SUPER_ADMIN';
+  bool get isAdmin => role.toUpperCase() == 'ADMIN' || role.toUpperCase() == 'SUPER_ADMIN' || role.toUpperCase() == 'SUPERADMIN';
+  bool get isSuperAdmin => role.toUpperCase() == 'SUPER_ADMIN' || role.toUpperCase() == 'SUPERADMIN';
+  bool get isStaff => !isAdmin;
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(

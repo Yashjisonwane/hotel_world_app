@@ -166,7 +166,7 @@ class AppDrawer extends StatelessWidget {
                     );
                   },
                 ),
-                if (auth.isAdmin)
+                if (auth.isAdmin) ...[
                   _buildDrawerItem(
                     context,
                     icon: Icons.manage_accounts_outlined,
@@ -179,19 +179,19 @@ class AppDrawer extends StatelessWidget {
                       );
                     },
                   ),
-                const Divider(),
-                _buildDrawerItem(
-                  context,
-                  icon: Icons.settings_outlined,
-                  title: 'Company Settings',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                    );
-                  },
-                ),
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.settings_outlined,
+                    title: 'Company Settings',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                      );
+                    },
+                  ),
+                ],
               ],
             ),
           ),

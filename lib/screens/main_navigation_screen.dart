@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../constants/app_colors.dart';
 import '../providers/quotation_provider.dart';
+import '../services/app_update_service.dart';
 import 'dashboard/dashboard_screen.dart';
 import 'quotation/quotation_list_screen.dart';
 import 'quotation/create_quotation_screen.dart';
@@ -30,6 +31,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AppUpdateService.checkForUpdate(context, silent: true);
+    });
   }
 
   void _onTabTapped(int index) {
