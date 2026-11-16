@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
 import '../../constants/app_colors.dart';
 import '../../services/pricing_engine.dart';
+import '../../services/pdf_invoice_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/quotation_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../providers/customer_provider.dart';
+import '../../providers/settings_provider.dart';
 import '../quotation/create_quotation_screen.dart';
 import '../quotation/quotation_list_screen.dart';
 import '../quotation/quotation_preview_screen.dart';
@@ -20,6 +23,8 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
+  final DateFormat _dateFormat = DateFormat('dd/MM/yyyy');
+
   @override
   void initState() {
     super.initState();
@@ -325,45 +330,97 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   itemBuilder: (context, idx) {
                     final q = quoteProv.quotations[idx];
                     return Card(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                        leading: CircleAvatar(
-                          backgroundColor: AppColors.primary100,
-                          child: const Icon(Icons.receipt_long, color: AppColors.primary700, size: 20),
-                        ),
-                        title: Text(
-                          q.quotationNumber,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                        ),
-                        subtitle: Text(
-                          '${q.customerName} • ${q.items.length} items\nTotal: ${PricingEngine.formatCurrency(q.finalAmount)}',
-                          style: const TextStyle(fontSize: 12, color: AppColors.slate600),
-                        ),
-                        isThreeLine: true,
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      elevation: 1,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            IconButton(
-                              icon: const Icon(Icons.picture_as_pdf, color: AppColors.primary700),
-                              tooltip: 'Preview PDF',
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => QuotationPreviewScreen(quotation: q)),
-                                );
-                              },
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.receipt_long, color: AppColors.primary700, size: 18),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      q.quotationNumber,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  PricingEngine.formatCurrency(q.finalAmount),
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.primary800),
+                                ),
+                              ],
                             ),
-                            const Icon(Icons.chevron_right, color: AppColors.slate400),
+                            const SizedBox(height: 6),
+                            Text(
+                              q.customerName,
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.slate800),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${q.items.length} items • ${_dateFormat.format(q.date)}',
+                              style: const TextStyle(fontSize: 11, color: AppColors.slate500),
+                            ),
+                            const Divider(height: 18),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFDC2626), // High-visibility PDF Red
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    elevation: 2,
+                                  ),
+                                  icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
+                                  label: const Text(
+                                    'VIEW PDF',
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 0.5),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => QuotationPreviewScreen(quotation: q)),
+                                    );
+                                  },
+                                ),
+                                Row(
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit_outlined, size: 20, color: AppColors.slate600),
+                                      tooltip: 'Edit Quotation',
+                                      onPressed: () {
+                                        quoteProv.loadQuotationForEdit(q);
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (_) => const CreateQuotationScreen()),
+                                        );
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.share, size: 20, color: AppColors.slate600),
+                                      tooltip: 'Share on WhatsApp',
+                                      onPressed: () {
+                                        final settingsProv = context.read<SettingsProvider>();
+                                        PdfInvoiceService.shareQuotationPdf(
+                                          quotation: q,
+                                          settings: settingsProv.settings,
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ],
                         ),
-                        onTap: () {
-                          quoteProv.loadQuotationForEdit(q);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => const CreateQuotationScreen()),
-                          );
-                        },
                       ),
                     );
                   },

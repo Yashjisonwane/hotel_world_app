@@ -235,72 +235,97 @@ class _QuotationListScreenState extends State<QuotationListScreen> {
                                       ),
                                       const SizedBox(height: 8),
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          IconButton(
-                                            icon: const Icon(Icons.share, size: 19, color: AppColors.slate600),
-                                            tooltip: 'Share on WhatsApp',
+                                          ElevatedButton.icon(
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: const Color(0xFFDC2626), // High-visibility PDF Red
+                                              foregroundColor: Colors.white,
+                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                              elevation: 1.5,
+                                            ),
+                                            icon: const Icon(Icons.picture_as_pdf_rounded, size: 16),
+                                            label: const Text(
+                                              'VIEW PDF',
+                                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5, letterSpacing: 0.5),
+                                            ),
                                             onPressed: () {
-                                              PdfInvoiceService.shareQuotationPdf(
-                                                quotation: q,
-                                                settings: settingsProv.settings,
-                                              );
-                                            },
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(Icons.copy_all_outlined, size: 19, color: AppColors.primary700),
-                                            tooltip: 'Duplicate Quotation',
-                                            onPressed: () {
-                                              final prefix = settingsProv.settings.quotePrefix.isNotEmpty
-                                                  ? settingsProv.settings.quotePrefix
-                                                  : 'HW/26-27/';
-                                              qp.duplicateQuotation(q.id, prefix: prefix);
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  content: Text('Duplicated as new draft from ${q.quotationNumber}'),
-                                                  backgroundColor: AppColors.primary800,
-                                                ),
-                                              );
                                               Navigator.push(
                                                 context,
-                                                MaterialPageRoute(builder: (_) => const CreateQuotationScreen()),
+                                                MaterialPageRoute(builder: (_) => QuotationPreviewScreen(quotation: q)),
                                               );
                                             },
                                           ),
-                                          IconButton(
-                                            icon: const Icon(Icons.edit_outlined, size: 19, color: AppColors.slate600),
-                                            tooltip: 'Edit',
-                                            onPressed: () {
-                                              qp.loadQuotationForEdit(q);
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(builder: (_) => const CreateQuotationScreen()),
-                                              );
-                                            },
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(Icons.delete_outline, size: 19, color: AppColors.error),
-                                            tooltip: 'Delete',
-                                            onPressed: () {
-                                              showDialog(
-                                                context: context,
-                                                builder: (dCtx) => AlertDialog(
-                                                  title: const Text('Delete Quotation?'),
-                                                  content: Text('Are you sure you want to delete ${q.quotationNumber}?'),
-                                                  actions: [
-                                                    TextButton(onPressed: () => Navigator.pop(dCtx), child: const Text('Cancel')),
-                                                    ElevatedButton(
-                                                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-                                                      onPressed: () {
-                                                        qp.deleteQuotation(q.id);
-                                                        Navigator.pop(dCtx);
-                                                      },
-                                                      child: const Text('Delete'),
+                                          Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              IconButton(
+                                                icon: const Icon(Icons.share, size: 19, color: AppColors.slate600),
+                                                tooltip: 'Share on WhatsApp',
+                                                onPressed: () {
+                                                  PdfInvoiceService.shareQuotationPdf(
+                                                    quotation: q,
+                                                    settings: settingsProv.settings,
+                                                  );
+                                                },
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.copy_all_outlined, size: 19, color: AppColors.primary700),
+                                                tooltip: 'Duplicate Quotation',
+                                                onPressed: () {
+                                                  final prefix = settingsProv.settings.quotePrefix.isNotEmpty
+                                                      ? settingsProv.settings.quotePrefix
+                                                      : 'HW/26-27/';
+                                                  qp.duplicateQuotation(q.id, prefix: prefix);
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text('Duplicated as new draft from ${q.quotationNumber}'),
+                                                      backgroundColor: AppColors.primary800,
                                                     ),
-                                                  ],
-                                                ),
-                                              );
-                                            },
+                                                  );
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(builder: (_) => const CreateQuotationScreen()),
+                                                  );
+                                                },
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.edit_outlined, size: 19, color: AppColors.slate600),
+                                                tooltip: 'Edit',
+                                                onPressed: () {
+                                                  qp.loadQuotationForEdit(q);
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(builder: (_) => const CreateQuotationScreen()),
+                                                  );
+                                                },
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.delete_outline, size: 19, color: AppColors.error),
+                                                tooltip: 'Delete',
+                                                onPressed: () {
+                                                  showDialog(
+                                                    context: context,
+                                                    builder: (dCtx) => AlertDialog(
+                                                      title: const Text('Delete Quotation?'),
+                                                      content: Text('Are you sure you want to delete ${q.quotationNumber}?'),
+                                                      actions: [
+                                                        TextButton(onPressed: () => Navigator.pop(dCtx), child: const Text('Cancel')),
+                                                        ElevatedButton(
+                                                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+                                                          onPressed: () {
+                                                            qp.deleteQuotation(q.id);
+                                                            Navigator.pop(dCtx);
+                                                          },
+                                                          child: const Text('Delete'),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ],
                                           ),
                                         ],
                                       ),
