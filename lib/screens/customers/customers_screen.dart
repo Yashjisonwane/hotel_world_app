@@ -150,6 +150,11 @@ class _CustomersScreenState extends State<CustomersScreen> {
       appBar: AppBar(
         title: const Text('CUSTOMERS DIRECTORY'),
         actions: [
+          TextButton.icon(
+            icon: const Icon(Icons.person_add, size: 18, color: AppColors.primary400),
+            label: const Text('Add Customer', style: TextStyle(color: AppColors.primary400, fontWeight: FontWeight.bold, fontSize: 13)),
+            onPressed: () => _showAddEditCustomerModal(),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => custProv.fetchCustomers(),
@@ -195,92 +200,177 @@ class _CustomersScreenState extends State<CustomersScreen> {
                             final c = custProv.customers[idx];
                             return Card(
                               margin: EdgeInsets.zero,
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: AppColors.primary100,
-                                  child: Text(
-                                    c.companyName.isNotEmpty ? c.companyName[0].toUpperCase() : 'C',
-                                    style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary700),
-                                  ),
-                                ),
-                                title: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        c.companyName,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                      ),
-                                    ),
-                                    if (c.quotationsCount > 0)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary100,
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        child: Text(
-                                          '${c.quotationsCount} quotes',
-                                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary800),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                                subtitle: Column(
+                              elevation: 1,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                side: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const SizedBox(height: 3),
-                                    if (c.phone != null && c.phone!.isNotEmpty)
-                                      Text('Phone: ${c.phone}', style: const TextStyle(fontSize: 12, color: AppColors.slate700)),
-                                    if (c.billingAddress != null && c.billingAddress!.isNotEmpty)
-                                      Text(c.billingAddress!, style: const TextStyle(fontSize: 11, color: AppColors.slate500)),
-                                  ],
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (c.phone != null && c.phone!.isNotEmpty) ...[
-                                      IconButton(
-                                        icon: const Icon(Icons.phone, color: AppColors.success, size: 20),
-                                        tooltip: 'Call Customer',
-                                        onPressed: () => launchUrl(Uri.parse('tel:${c.phone}')),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.chat_bubble_outline, color: Color(0xFF16A34A), size: 20),
-                                        tooltip: 'WhatsApp Chat',
-                                        onPressed: () {
-                                          final clean = c.phone!.replaceAll(RegExp(r'\D'), '');
-                                          final fullNumber = clean.length == 10 ? '91$clean' : clean;
-                                          launchUrl(
-                                            Uri.parse('https://wa.me/$fullNumber?text=Hello%20${Uri.encodeComponent(c.companyName)},%20Hotel%20World%20greetings!'),
-                                            mode: LaunchMode.externalApplication,
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                    IconButton(
-                                      icon: const Icon(Icons.add_shopping_cart, color: AppColors.primary700, size: 20),
-                                      tooltip: 'Create Quote for this Customer',
-                                      onPressed: () {
-                                        final qp = context.read<QuotationProvider>();
-                                        qp.initNewQuotation();
-                                        qp.setCustomer(c);
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(builder: (_) => const CreateQuotationScreen()),
-                                        );
-                                      },
+                                    // 1. Top Section: Avatar + Customer Name + Quotes Badge + Phone + Address
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 19,
+                                          backgroundColor: AppColors.primary100,
+                                          child: Text(
+                                            c.companyName.isNotEmpty ? c.companyName[0].toUpperCase() : 'C',
+                                            style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary700, fontSize: 15),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Expanded(
+                                                    child: Text(
+                                                      c.companyName,
+                                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppColors.slate900),
+                                                    ),
+                                                  ),
+                                                  if (c.quotationsCount > 0)
+                                                    Container(
+                                                      margin: const EdgeInsets.only(left: 6),
+                                                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                                      decoration: BoxDecoration(
+                                                        color: AppColors.primary100,
+                                                        borderRadius: BorderRadius.circular(4),
+                                                      ),
+                                                      child: Text(
+                                                        '${c.quotationsCount} quotes',
+                                                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primary800),
+                                                      ),
+                                                    ),
+                                                ],
+                                              ),
+                                              if (c.phone != null && c.phone!.isNotEmpty) ...[
+                                                const SizedBox(height: 3),
+                                                Text(
+                                                  'Phone: ${c.phone}',
+                                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.slate700),
+                                                ),
+                                              ],
+                                              if (c.billingAddress != null && c.billingAddress!.isNotEmpty) ...[
+                                                const SizedBox(height: 2),
+                                                Text(
+                                                  c.billingAddress!,
+                                                  style: const TextStyle(fontSize: 11, color: AppColors.slate500),
+                                                  maxLines: 2,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    PopupMenuButton<String>(
-                                      onSelected: (val) {
-                                        if (val == 'edit') {
-                                          _showAddEditCustomerModal(customer: c);
-                                        } else if (val == 'delete') {
-                                          custProv.deleteCustomer(c.id);
-                                        }
-                                      },
-                                      itemBuilder: (_) => const [
-                                        PopupMenuItem(value: 'edit', child: Text('Edit')),
-                                        PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: AppColors.error))),
+                                    const SizedBox(height: 10),
+                                    const Divider(height: 1, thickness: 0.8, color: Color(0xFFF1F5F9)),
+                                    const SizedBox(height: 8),
+
+                                    // 2. Bottom Action Row: Call | WhatsApp | Spacer | + Quote Button | 3-Dot More
+                                    Row(
+                                      children: [
+                                        if (c.phone != null && c.phone!.isNotEmpty) ...[
+                                          InkWell(
+                                            onTap: () => launchUrl(Uri.parse('tel:${c.phone}')),
+                                            borderRadius: BorderRadius.circular(6),
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFF0FDF4),
+                                                borderRadius: BorderRadius.circular(6),
+                                                border: Border.all(color: const Color(0xFFBBF7D0)),
+                                              ),
+                                              child: const Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(Icons.phone, color: AppColors.success, size: 14),
+                                                  SizedBox(width: 4),
+                                                  Text('Call', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF15803D))),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          InkWell(
+                                            onTap: () {
+                                              final clean = c.phone!.replaceAll(RegExp(r'\D'), '');
+                                              final fullNumber = clean.length == 10 ? '91$clean' : clean;
+                                              launchUrl(
+                                                Uri.parse('https://wa.me/$fullNumber?text=Hello%20${Uri.encodeComponent(c.companyName)},%20Hotel%20World%20greetings!'),
+                                                mode: LaunchMode.externalApplication,
+                                              );
+                                            },
+                                            borderRadius: BorderRadius.circular(6),
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFF0FDF4),
+                                                borderRadius: BorderRadius.circular(6),
+                                                border: Border.all(color: const Color(0xFFBBF7D0)),
+                                              ),
+                                              child: const Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Icon(Icons.chat_bubble_outline, color: Color(0xFF16A34A), size: 14),
+                                                  SizedBox(width: 4),
+                                                  Text('WhatsApp', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF15803D))),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                        const Spacer(),
+                                        ElevatedButton.icon(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: AppColors.primary500,
+                                            foregroundColor: AppColors.slate950,
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                            minimumSize: Size.zero,
+                                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                            elevation: 0.5,
+                                          ),
+                                          icon: const Icon(Icons.add_shopping_cart, size: 14),
+                                          label: const Text(
+                                            'Quote',
+                                            style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold),
+                                          ),
+                                          onPressed: () {
+                                            final qp = context.read<QuotationProvider>();
+                                            qp.initNewQuotation();
+                                            qp.setCustomer(c);
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(builder: (_) => const CreateQuotationScreen()),
+                                            );
+                                          },
+                                        ),
+                                        const SizedBox(width: 4),
+                                        PopupMenuButton<String>(
+                                          padding: EdgeInsets.zero,
+                                          icon: const Icon(Icons.more_vert, size: 20, color: AppColors.slate500),
+                                          onSelected: (val) {
+                                            if (val == 'edit') {
+                                              _showAddEditCustomerModal(customer: c);
+                                            } else if (val == 'delete') {
+                                              custProv.deleteCustomer(c.id);
+                                            }
+                                          },
+                                          itemBuilder: (_) => const [
+                                            PopupMenuItem(value: 'edit', child: Text('Edit')),
+                                            PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: AppColors.error))),
+                                          ],
+                                        ),
                                       ],
                                     ),
                                   ],
@@ -292,13 +382,6 @@ class _CustomersScreenState extends State<CustomersScreen> {
                       ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.primary500,
-        foregroundColor: AppColors.slate950,
-        icon: const Icon(Icons.person_add),
-        label: const Text('Add Customer', style: TextStyle(fontWeight: FontWeight.bold)),
-        onPressed: () => _showAddEditCustomerModal(),
       ),
     );
   }
