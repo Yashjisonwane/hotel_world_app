@@ -712,28 +712,30 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
                           ),
                           const SizedBox(height: 10),
 
-                          // Doc Type Selector: [ QUOTATION ] [ PI ] [ PROFORMA ] [ ESTIMATE ]
+                          // Doc Type Selector: [ QUOTE ] [ PI ] [ PROFORMA ] [ ESTIMATE ]
                           Row(
                             children: [
                               const Text('Doc Type: ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF334155))),
                               const SizedBox(width: 4),
                               Expanded(
-                                child: Row(
-                                  children: [
-                                    {'label': 'QUOTATION', 'val': 'QUOTATION'},
-                                    {'label': 'PI', 'val': 'PI'},
-                                    {'label': 'PROFORMA', 'val': 'PROFORMA INVOICE'},
-                                    {'label': 'ESTIMATE', 'val': 'ESTIMATE'},
-                                  ].map((d) {
-                                    final isSel = (qp.documentTitle).toUpperCase() == d['val'];
-                                    return Expanded(
-                                      child: Container(
-                                        margin: const EdgeInsets.only(right: 4),
+                                child: SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
+                                  physics: const BouncingScrollPhysics(),
+                                  child: Row(
+                                    children: [
+                                      {'label': 'QUOTE', 'val': 'QUOTATION'},
+                                      {'label': 'PI', 'val': 'PI'},
+                                      {'label': 'PROFORMA', 'val': 'PROFORMA INVOICE'},
+                                      {'label': 'ESTIMATE', 'val': 'ESTIMATE'},
+                                    ].map((d) {
+                                      final isSel = (qp.documentTitle).toUpperCase() == d['val'];
+                                      return Padding(
+                                        padding: const EdgeInsets.only(right: 6),
                                         child: InkWell(
                                           onTap: () => qp.setQuotationMeta(documentTitle: d['val']),
                                           borderRadius: BorderRadius.circular(6),
                                           child: Container(
-                                            padding: const EdgeInsets.symmetric(vertical: 5),
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                             alignment: Alignment.center,
                                             decoration: BoxDecoration(
                                               color: isSel ? const Color(0xFFEFF6FF) : AppColors.white,
@@ -746,16 +748,17 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
                                             child: Text(
                                               d['label']!,
                                               style: TextStyle(
-                                                fontSize: 9.5,
+                                                fontSize: 10.5,
                                                 fontWeight: FontWeight.w900,
                                                 color: isSel ? const Color(0xFF1D4ED8) : const Color(0xFF475569),
+                                                letterSpacing: 0.3,
                                               ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                    );
-                                  }).toList(),
+                                      );
+                                    }).toList(),
+                                  ),
                                 ),
                               ),
                             ],

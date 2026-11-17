@@ -402,6 +402,12 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
         automaticallyImplyLeading: false, // NO HAMBURGER SIDEBAR
         title: const Text('PRODUCT CATALOG'),
         actions: [
+          if (auth.isAdmin || auth.canManageCatalog)
+            TextButton.icon(
+              icon: const Icon(Icons.add, size: 18, color: AppColors.primary400),
+              label: const Text('Add Product', style: TextStyle(color: AppColors.primary400, fontWeight: FontWeight.bold, fontSize: 13)),
+              onPressed: () => _showAddEditProductModal(),
+            ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () => prodProv.fetchProducts(refresh: true),
@@ -494,71 +500,170 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
 
                             return Card(
                               margin: EdgeInsets.zero,
-                              child: ListTile(
-                                leading: ClipRRect(
-                                  borderRadius: BorderRadius.circular(6),
-                                  child: Container(
-                                    width: 50,
-                                    height: 50,
-                                    color: AppColors.slate100,
-                                    child: imgUrl.isNotEmpty
-                                        ? CachedNetworkImage(
-                                            imageUrl: imgUrl,
-                                            fit: BoxFit.cover,
-                                            placeholder: (_, __) => const Center(
-                                              child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
-                                            ),
-                                            errorWidget: (_, __, ___) => const Icon(
-                                              Icons.camera_alt_outlined,
-                                              color: AppColors.slate400,
-                                              size: 20,
-                                            ),
-                                          )
-                                        : const Icon(
-                                            Icons.camera_alt_outlined,
-                                            color: AppColors.slate400,
-                                            size: 20,
-                                          ),
-                                  ),
-                                ),
-                                title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                                subtitle: Text(
-                                  '${p.itemCode.isNotEmpty ? "Code: ${p.itemCode} • " : ""}${p.category}',
-                                  style: const TextStyle(fontSize: 11, color: AppColors.slate500),
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
+                              elevation: 1,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                side: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(10),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      crossAxisAlignment: CrossAxisAlignment.end,
-                                      children: [
-                                        Text(
-                                          PricingEngine.formatCurrency(p.sellingPrice),
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                        ),
-                                        Text('/${p.unit}', style: const TextStyle(fontSize: 10, color: AppColors.slate500)),
-                                      ],
+                                    // 1. Photo Thumbnail
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Container(
+                                        width: 54,
+                                        height: 54,
+                                        color: const Color(0xFFF1F5F9),
+                                        child: imgUrl.isNotEmpty
+                                            ? CachedNetworkImage(
+                                                imageUrl: imgUrl,
+                                                fit: BoxFit.cover,
+                                                placeholder: (_, __) => const Center(
+                                                  child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                                                ),
+                                                errorWidget: (_, __, ___) => const Icon(
+                                                  Icons.camera_alt_outlined,
+                                                  color: AppColors.slate400,
+                                                  size: 22,
+                                                ),
+                                              )
+                                            : const Icon(
+                                                Icons.camera_alt_outlined,
+                                                color: AppColors.slate400,
+                                                size: 22,
+                                              ),
+                                      ),
                                     ),
-                                    IconButton(
-                                      icon: const Icon(Icons.calculate_outlined, color: AppColors.primary700, size: 20),
-                                      tooltip: 'Pricing Engine Calculator',
-                                      onPressed: () => _showPricingCalculatorSheet(p),
-                                    ),
-                                    if (auth.isAdmin || auth.canManageCatalog)
-                                      PopupMenuButton<String>(
-                                        onSelected: (val) {
-                                          if (val == 'edit') {
-                                            _showAddEditProductModal(product: p);
-                                          } else if (val == 'delete') {
-                                            prodProv.deleteProduct(p.id);
-                                          }
-                                        },
-                                        itemBuilder: (_) => const [
-                                          PopupMenuItem(value: 'edit', child: Text('Edit')),
-                                          PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: AppColors.error))),
+                                    const SizedBox(width: 12),
+
+                                    // 2. Full Width Content Column
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          // Title gets full remaining width!
+                                          Text(
+                                            p.name,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 13.5,
+                                              color: Color(0xFF0F172A),
+                                              height: 1.25,
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 3),
+
+                                          // Code & Category Row
+                                          Row(
+                                            children: [
+                                              if (p.itemCode.isNotEmpty) ...[
+                                                Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(0xFFF1F5F9),
+                                                    borderRadius: BorderRadius.circular(4),
+                                                  ),
+                                                  child: Text(
+                                                    p.itemCode,
+                                                    style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 6),
+                                              ],
+                                              Flexible(
+                                                child: Text(
+                                                  p.category,
+                                                  style: const TextStyle(fontSize: 11, color: AppColors.slate500),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 6),
+
+                                          // Price & Actions Row
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                crossAxisAlignment: CrossAxisAlignment.baseline,
+                                                textBaseline: TextBaseline.alphabetic,
+                                                children: [
+                                                  Text(
+                                                    PricingEngine.formatCurrency(p.sellingPrice),
+                                                    style: const TextStyle(
+                                                      fontSize: 14.5,
+                                                      fontWeight: FontWeight.w900,
+                                                      color: Color(0xFF0F172A),
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    ' / ${p.unit}',
+                                                    style: const TextStyle(fontSize: 11, color: AppColors.slate500, fontWeight: FontWeight.w600),
+                                                  ),
+                                                ],
+                                              ),
+                                              Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  InkWell(
+                                                    onTap: () => _showPricingCalculatorSheet(p),
+                                                    borderRadius: BorderRadius.circular(6),
+                                                    child: Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                      decoration: BoxDecoration(
+                                                        color: const Color(0xFFEFF6FF),
+                                                        borderRadius: BorderRadius.circular(6),
+                                                        border: Border.all(color: const Color(0xFFBFDBFE)),
+                                                      ),
+                                                      child: const Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          Icon(Icons.calculate_outlined, color: Color(0xFF1D4ED8), size: 14),
+                                                          SizedBox(width: 3),
+                                                          Text(
+                                                            'Rules',
+                                                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1D4ED8)),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  if (auth.isAdmin || auth.canManageCatalog) ...[
+                                                    const SizedBox(width: 4),
+                                                    SizedBox(
+                                                      width: 28,
+                                                      height: 28,
+                                                      child: PopupMenuButton<String>(
+                                                        padding: EdgeInsets.zero,
+                                                        icon: const Icon(Icons.more_vert, size: 18, color: Color(0xFF64748B)),
+                                                        onSelected: (val) {
+                                                          if (val == 'edit') {
+                                                            _showAddEditProductModal(product: p);
+                                                          } else if (val == 'delete') {
+                                                            prodProv.deleteProduct(p.id);
+                                                          }
+                                                        },
+                                                        itemBuilder: (_) => const [
+                                                          PopupMenuItem(value: 'edit', child: Text('Edit')),
+                                                          PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: AppColors.error))),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ],
+                                              ),
+                                            ],
+                                          ),
                                         ],
                                       ),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -569,15 +674,6 @@ class _ProductCatalogScreenState extends State<ProductCatalogScreen> {
           ),
         ],
       ),
-      floatingActionButton: (auth.isAdmin || auth.canManageCatalog)
-          ? FloatingActionButton.extended(
-              backgroundColor: AppColors.primary500,
-              foregroundColor: AppColors.slate950,
-              icon: const Icon(Icons.add),
-              label: const Text('Add Product', style: TextStyle(fontWeight: FontWeight.bold)),
-              onPressed: () => _showAddEditProductModal(),
-            )
-          : null,
     );
   }
 }
