@@ -13,6 +13,7 @@ class QuotationItem {
   double price;
   double gstRate;
   bool isGstAdded;
+  bool isGstInclusive;
   double netAmount;
   double gstAmount;
   double grossAmount;
@@ -36,6 +37,7 @@ class QuotationItem {
     this.price = 0.0,
     this.gstRate = 18.0,
     this.isGstAdded = false,
+    this.isGstInclusive = false,
     this.netAmount = 0.0,
     this.gstAmount = 0.0,
     this.grossAmount = 0.0,
@@ -78,6 +80,7 @@ class QuotationItem {
       price: double.tryParse(json['price']?.toString() ?? '0') ?? 0.0,
       gstRate: double.tryParse(json['gstRate']?.toString() ?? '18') ?? 18.0,
       isGstAdded: (double.tryParse(json['gstAmount']?.toString() ?? '0') ?? 0) > 0,
+      isGstInclusive: json['isGstInclusive'] == true || RegExp(r'\binc[\s.]*gst\b', caseSensitive: false).hasMatch(json['name']?.toString() ?? ''),
       netAmount: double.tryParse(json['netAmount']?.toString() ?? '0') ?? 0.0,
       gstAmount: double.tryParse(json['gstAmount']?.toString() ?? '0') ?? 0.0,
       grossAmount: double.tryParse(json['grossAmount']?.toString() ?? '0') ?? 0.0,
@@ -105,6 +108,7 @@ class QuotationItem {
       'price': price,
       'gstRate': gstRate,
       'isGstAdded': isGstAdded,
+      'isGstInclusive': isGstInclusive,
       'netAmount': netAmount,
       'gstAmount': gstAmount,
       'grossAmount': grossAmount,
@@ -130,6 +134,7 @@ class QuotationItem {
     double? price,
     double? gstRate,
     bool? isGstAdded,
+    bool? isGstInclusive,
     double? netAmount,
     double? gstAmount,
     double? grossAmount,
@@ -153,6 +158,7 @@ class QuotationItem {
       price: price ?? this.price,
       gstRate: gstRate ?? this.gstRate,
       isGstAdded: isGstAdded ?? this.isGstAdded,
+      isGstInclusive: isGstInclusive ?? this.isGstInclusive,
       netAmount: netAmount ?? this.netAmount,
       gstAmount: gstAmount ?? this.gstAmount,
       grossAmount: grossAmount ?? this.grossAmount,

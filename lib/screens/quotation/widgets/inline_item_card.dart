@@ -748,7 +748,51 @@ class _InlineItemCardState extends State<InlineItemCard> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('UNIT RATE (₹):', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF475569))),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('RATE (₹):', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF475569))),
+                              InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    widget.item.isGstInclusive = !widget.item.isGstInclusive;
+                                  });
+                                  _notifyChange();
+                                },
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: Checkbox(
+                                        value: widget.item.isGstInclusive || RegExp(r'\binc[\s.]*gst\b', caseSensitive: false).hasMatch(widget.item.name),
+                                        onChanged: (val) {
+                                          setState(() {
+                                            widget.item.isGstInclusive = val ?? false;
+                                          });
+                                          _notifyChange();
+                                        },
+                                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        activeColor: const Color(0xFF15803D),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      'Inc. GST',
+                                      style: TextStyle(
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.bold,
+                                        color: (widget.item.isGstInclusive || RegExp(r'\binc[\s.]*gst\b', caseSensitive: false).hasMatch(widget.item.name))
+                                            ? const Color(0xFF15803D)
+                                            : const Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                           const SizedBox(height: 3),
                           TextField(
                             controller: _priceCtrl,

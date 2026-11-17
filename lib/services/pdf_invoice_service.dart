@@ -23,6 +23,12 @@ class PdfInvoiceService {
     return formatter.format(val);
   }
 
+  static String _cleanItemName(String name) {
+    return name.replaceAll(RegExp(r'\s*\(\s*inc[\s.]*gst\s*\)', caseSensitive: false), '')
+               .replaceAll(RegExp(r'\s*inc[\s.]*gst\b', caseSensitive: false), '')
+               .trim();
+  }
+
   static Future<Uint8List> generateQuotationPdf({
     required Quotation quotation,
     required CompanySettings settings,
@@ -410,7 +416,7 @@ class PdfInvoiceService {
                                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                                 children: [
                                   pw.Text(
-                                    it.name.toUpperCase(),
+                                    _cleanItemName(it.name).toUpperCase(),
                                     style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold),
                                   ),
                                   if (isMachinery && it.specification != null && it.specification!.isNotEmpty)
@@ -446,9 +452,22 @@ class PdfInvoiceService {
                             pw.Container(
                               padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 2),
                               alignment: pw.Alignment.center,
-                              child: pw.Text(
-                                formatInteger(it.price),
-                                style: const pw.TextStyle(fontSize: 8),
+                              child: pw.Row(
+                                mainAxisSize: pw.MainAxisSize.min,
+                                mainAxisAlignment: pw.MainAxisAlignment.center,
+                                children: [
+                                  pw.Text(
+                                    formatInteger(it.price),
+                                    style: const pw.TextStyle(fontSize: 8),
+                                  ),
+                                  if (it.isGstInclusive || RegExp(r'\binc[\s.]*gst\b', caseSensitive: false).hasMatch(it.name)) ...[
+                                    pw.SizedBox(width: 2),
+                                    pw.Text(
+                                      '(Inc. GST)',
+                                      style: pw.TextStyle(fontSize: 6, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#15803D')),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ),
 
@@ -469,7 +488,7 @@ class PdfInvoiceService {
                                 padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 2),
                                 alignment: pw.Alignment.center,
                                 child: pw.Text(
-                                  '${it.gstRate.toInt()}%',
+                                  it.gstRate == 0 ? '0% inc.' : '${it.gstRate.toInt()}%',
                                   style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
                                 ),
                               ),
