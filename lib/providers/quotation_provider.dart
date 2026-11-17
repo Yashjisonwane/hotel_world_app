@@ -232,7 +232,7 @@ class QuotationProvider extends ChangeNotifier {
   void loadQuotationForEdit(Quotation q) {
     _editingQuotationId = q.id;
     _quotationNumber = q.quotationNumber;
-    _quotationDate = q.date;
+    _quotationDate = DateTime.now(); // Always set to current date when editing as requested
     _customerId = q.customerId;
     _customerName = q.customerName;
     _customerPhone = q.customerPhone ?? '';
