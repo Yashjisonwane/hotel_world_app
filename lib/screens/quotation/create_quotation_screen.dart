@@ -1463,7 +1463,6 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
         ),
       ),
     ),
-  ),
-);
+  );
 }
 }

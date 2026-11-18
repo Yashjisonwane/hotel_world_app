@@ -219,7 +219,7 @@ class QuotationProvider extends ChangeNotifier {
       price: 0.0,
       gstRate: 18.0,
       isGstAdded: true,
-      section: 'EQUIPMENT SECTION',
+      section: null,
     );
     firstRow.recalculate();
     _items = [firstRow];
@@ -287,13 +287,6 @@ class QuotationProvider extends ChangeNotifier {
 
   void toggleQuotationType() {
     _quotationType = _quotationType == 'MACHINERY' ? 'STANDARD' : 'MACHINERY';
-    if (_quotationType == 'MACHINERY') {
-      for (var it in _items) {
-        if (it.section == null || it.section!.trim().isEmpty) {
-          it.section = 'EQUIPMENT SECTION';
-        }
-      }
-    }
     notifyListeners();
   }
 
@@ -404,7 +397,7 @@ class QuotationProvider extends ChangeNotifier {
       size: size,
       installationCharge: installationCharge,
       imageUrl: imageUrl,
-      section: section ?? (_quotationType == 'MACHINERY' ? 'EQUIPMENT SECTION' : null),
+      section: section,
     );
     newItem.recalculate();
     _items.add(newItem);
@@ -420,7 +413,7 @@ class QuotationProvider extends ChangeNotifier {
       price: 0.0,
       gstRate: _gstMode == 'WITH_GST' ? 18.0 : 0.0,
       isGstAdded: _gstMode == 'WITH_GST',
-      section: section ?? (_quotationType == 'MACHINERY' ? 'EQUIPMENT SECTION' : null),
+      section: section,
     );
     newItem.recalculate();
     _items.add(newItem);
@@ -430,12 +423,11 @@ class QuotationProvider extends ChangeNotifier {
   List<String> get machinerySections {
     final list = <String>[];
     for (var it in _items) {
-      final s = (it.section != null && it.section!.trim().isNotEmpty)
-          ? it.section!.trim().toUpperCase()
-          : 'EQUIPMENT SECTION';
-      if (!list.contains(s)) list.add(s);
+      if (it.section != null && it.section!.trim().isNotEmpty) {
+        final s = it.section!.trim().toUpperCase();
+        if (!list.contains(s)) list.add(s);
+      }
     }
-    if (list.isEmpty) list.add('EQUIPMENT SECTION');
     return list;
   }
 
@@ -444,9 +436,19 @@ class QuotationProvider extends ChangeNotifier {
     for (var it in _items) {
       final current = (it.section != null && it.section!.trim().isNotEmpty)
           ? it.section!.trim().toUpperCase()
-          : 'EQUIPMENT SECTION';
+          : '';
       if (current == oldName.toUpperCase()) {
-        it.section = target;
+        it.section = target.isNotEmpty ? target : null;
+      }
+    }
+    notifyListeners();
+  }
+
+  void deleteSection(String sectionName) {
+    final target = sectionName.trim().toUpperCase();
+    for (var it in _items) {
+      if ((it.section ?? '').trim().toUpperCase() == target) {
+        it.section = null;
       }
     }
     notifyListeners();

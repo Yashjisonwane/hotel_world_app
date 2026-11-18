@@ -224,7 +224,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
                               decoration: const InputDecoration(
-                                hintText: 'Enter your email (e.g. staff@hotelworld.in)',
+                                hintText: 'Enter Email',
                                 prefixIcon: Icon(Icons.email_outlined, size: 20),
                               ),
                             ),
@@ -240,7 +240,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               controller: _passwordController,
                               obscureText: _obscurePassword,
                               decoration: InputDecoration(
-                                hintText: '••••••••',
+                                hintText: 'Enter Password',
                                 prefixIcon: const Icon(Icons.lock_outline, size: 20),
                                 suffixIcon: IconButton(
                                   icon: Icon(
