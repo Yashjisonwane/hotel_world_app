@@ -21,6 +21,8 @@ class QuotationItem {
   String? imageUrl;
   String? description;
   String? hsnCode;
+  double? purchasePrice;
+  double? marginPercent;
 
   QuotationItem({
     this.id,
@@ -45,6 +47,8 @@ class QuotationItem {
     this.imageUrl,
     this.description,
     this.hsnCode,
+    this.purchasePrice,
+    this.marginPercent,
   });
 
   /// Recalculates mathematical row values matching Hotel World web logic:
@@ -88,6 +92,8 @@ class QuotationItem {
       imageUrl: json['imageUrl']?.toString(),
       description: json['description']?.toString(),
       hsnCode: json['hsnCode']?.toString(),
+      purchasePrice: double.tryParse(json['purchasePrice']?.toString() ?? json['purchaseCost']?.toString() ?? ''),
+      marginPercent: double.tryParse(json['marginPercent']?.toString() ?? ''),
     );
     return item;
   }
@@ -106,6 +112,8 @@ class QuotationItem {
       'quantity': quantity,
       'unit': unit,
       'price': price,
+      'purchasePrice': purchasePrice,
+      'marginPercent': marginPercent,
       'gstRate': gstRate,
       'isGstAdded': isGstAdded,
       'isGstInclusive': isGstInclusive,
@@ -142,6 +150,8 @@ class QuotationItem {
     String? imageUrl,
     String? description,
     String? hsnCode,
+    double? purchasePrice,
+    double? marginPercent,
   }) {
     return QuotationItem(
       id: id ?? this.id,
@@ -166,6 +176,8 @@ class QuotationItem {
       imageUrl: imageUrl ?? this.imageUrl,
       description: description ?? this.description,
       hsnCode: hsnCode ?? this.hsnCode,
+      purchasePrice: purchasePrice ?? this.purchasePrice,
+      marginPercent: marginPercent ?? this.marginPercent,
     );
   }
 }

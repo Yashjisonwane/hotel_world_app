@@ -1331,119 +1331,131 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
         ),
         child: SafeArea(
           top: false,
-          child: Container(
-            height: 56,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-              // TOTAL AMOUNT
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('TOTAL AMOUNT:', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B))),
-                  Text(
-                    '₹ ${qp.finalAmount.toStringAsFixed(0)}',
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 8),
-
-              // [ 📥 PDF ] Button (Brown/Orange)
-              InkWell(
-                onTap: _handleSaveAndPreview,
-                child: Container(
-                  height: 38,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFC2410C),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.download, size: 13, color: Colors.white),
-                      SizedBox(width: 3),
-                      Text('PDF', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 4),
-
-              // [ 📊 Excel ] Button (Emerald)
-              InkWell(
-                onTap: _handleExcelExport,
-                child: Container(
-                  height: 38,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF059669),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.table_chart_outlined, size: 13, color: Colors.white),
-                      SizedBox(width: 3),
-                      Text('Excel', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 4),
-
-              // [ 🔗 Share ] Button (Bright Green WhatsApp)
-              InkWell(
-                onTap: _handleSharePdf,
-                child: Container(
-                  height: 38,
-                  width: 36,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF16A34A),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Icon(Icons.share, size: 15, color: Colors.white),
-                ),
-              ),
-              const SizedBox(width: 6),
-
-              // [ ✓ Save & View ] Button (Gold)
-              Expanded(
-                child: InkWell(
-                  onTap: _handleSaveAndPreview,
-                  child: Container(
-                    height: 38,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD97706),
-                      borderRadius: BorderRadius.circular(6),
-                      boxShadow: [
-                        BoxShadow(color: const Color(0xFFD97706).withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2)),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.check_circle_outline, size: 15, color: Colors.white),
-                        SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            'Save & View',
-                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.white),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Tier 1: Total Amount & Items Summary
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                color: const Color(0xFFF8FAFC),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Text('TOTAL: ', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF64748B))),
+                        Text(
+                          '₹ ${qp.finalAmount.toStringAsFixed(0)}',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
                         ),
                       ],
                     ),
-                  ),
+                    Text(
+                      '${qp.items.length} ${qp.items.length == 1 ? "Item" : "Items"}',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF64748B)),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1, color: Color(0xFFE2E8F0)),
+              // Tier 2: Action Buttons
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                child: Row(
+                  children: [
+                    // PDF Button
+                    Expanded(
+                      flex: 1,
+                      child: InkWell(
+                        onTap: _handleSaveAndPreview,
+                        child: Container(
+                          height: 38,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2563EB),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(Icons.download, size: 14, color: Colors.white),
+                              SizedBox(width: 3),
+                              Text('PDF', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    // Excel Button
+                    Expanded(
+                      flex: 1,
+                      child: InkWell(
+                        onTap: _handleExcelExport,
+                        child: Container(
+                          height: 38,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF059669),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(Icons.table_chart_outlined, size: 14, color: Colors.white),
+                              SizedBox(width: 3),
+                              Text('Excel', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    // Share WhatsApp Button
+                    InkWell(
+                      onTap: _handleSharePdf,
+                      child: Container(
+                        height: 38,
+                        width: 42,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF16A34A),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.share, size: 16, color: Colors.white),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    // Save & View Button
+                    Expanded(
+                      flex: 2,
+                      child: InkWell(
+                        onTap: _handleSaveAndPreview,
+                        child: Container(
+                          height: 38,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFD97706),
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(color: const Color(0xFFD97706).withOpacity(0.3), blurRadius: 4, offset: const Offset(0, 2)),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(Icons.check_circle_outline, size: 15, color: Colors.white),
+                              SizedBox(width: 4),
+                              Text(
+                                'Save & View',
+                                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900, color: Colors.white),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

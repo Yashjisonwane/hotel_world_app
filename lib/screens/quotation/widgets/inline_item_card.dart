@@ -236,7 +236,32 @@ class _InlineItemCardState extends State<InlineItemCard> {
     widget.item.sku = prod.itemCode;
     widget.item.category = prod.category;
     widget.item.hsnCode = prod.hsnCode;
+    if (prod.purchasePrice != null && prod.purchasePrice! > 0) {
+      widget.item.purchasePrice = prod.purchasePrice;
+    }
 
+    _notifyChange();
+  }
+
+  void _applyMarginPercent(double percent) {
+    double base = widget.item.purchasePrice ?? (double.tryParse(_priceCtrl.text) ?? 0.0);
+    if (base <= 0) return;
+    double newPrice = base * (1 + percent / 100.0);
+    newPrice = (newPrice * 100).roundToDouble() / 100.0;
+    setState(() {
+      _priceCtrl.text = newPrice.toStringAsFixed(2);
+      widget.item.marginPercent = percent;
+    });
+    _notifyChange();
+  }
+
+  void _roundPriceToNearest() {
+    double cur = double.tryParse(_priceCtrl.text) ?? 0.0;
+    if (cur <= 0) return;
+    double rounded = (cur / 10.0).roundToDouble() * 10.0;
+    setState(() {
+      _priceCtrl.text = rounded.toStringAsFixed(2);
+    });
     _notifyChange();
   }
 
@@ -817,6 +842,66 @@ class _InlineItemCardState extends State<InlineItemCard> {
                 ),
 
                 const SizedBox(height: 8),
+
+                // SECRET COMMISSION & MARGIN PILLS
+                Container(
+                  margin: const EdgeInsets.only(top: 2, bottom: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEFCE8),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFFEF08A)),
+                  ),
+                  child: Wrap(
+                    spacing: 5,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      if (widget.item.purchasePrice != null && widget.item.purchasePrice! > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFEF3C7),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: const Color(0xFFF59E0B)),
+                          ),
+                          child: Text(
+                            'Buy: ₹${widget.item.purchasePrice!.toStringAsFixed(0)}',
+                            style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFFB45309)),
+                          ),
+                        ),
+                      for (final pct in [5.0, 10.0, 12.5, 15.0, 20.0])
+                        InkWell(
+                          onTap: () => _applyMarginPercent(pct),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2563EB),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              '+${pct % 1 == 0 ? pct.toInt().toString() : pct.toString()}%',
+                              style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w900, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      InkWell(
+                        onTap: _roundPriceToNearest,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF59E0B),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text(
+                            '≈₹',
+                            style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w900, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
 
                 // ROW TOTAL BOX (Screenshot 3)
                 Container(
