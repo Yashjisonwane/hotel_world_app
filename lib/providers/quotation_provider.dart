@@ -173,14 +173,12 @@ class QuotationProvider extends ChangeNotifier {
   Future<void> deleteQuotation(String id) async {
     try {
       await _apiService.deleteQuotation(id);
-      _quotations.removeWhere((q) => q.id == id);
+      _quotations.removeWhere((q) => q.id == id || q.quotationNumber == id);
       _totalCount = (_totalCount > 0) ? _totalCount - 1 : 0;
-      if (_searchQuery.isEmpty && _selectedStatus == 'ALL') {
-        StorageService.setString(
-          StorageService.cacheQuotationsKey,
-          jsonEncode(_quotations.map((q) => q.toJson()).toList()),
-        );
-      }
+      StorageService.setString(
+        StorageService.cacheQuotationsKey,
+        jsonEncode(_quotations.map((q) => q.toJson()).toList()),
+      );
       notifyListeners();
     } catch (_) {}
   }
@@ -570,6 +568,11 @@ class QuotationProvider extends ChangeNotifier {
 
     final localQuote = buildCurrentQuotation();
 
+    if (_quotationNumber.trim().isEmpty) {
+      final randomSuffix = (1000 + (DateTime.now().millisecondsSinceEpoch % 9000)).toString();
+      _quotationNumber = 'HW/26-27/$randomSuffix';
+    }
+
     try {
       final payload = <String, dynamic>{
         if (_editingQuotationId != null) 'id': _editingQuotationId,
@@ -602,6 +605,8 @@ class QuotationProvider extends ChangeNotifier {
       };
 
       final saved = await _apiService.saveQuotation(payload);
+      _editingQuotationId = saved.id;
+      _quotationNumber = saved.quotationNumber;
       final idx = _quotations.indexWhere((q) => q.id == saved.id || q.quotationNumber == saved.quotationNumber);
       if (idx != -1) {
         _quotations[idx] = saved;

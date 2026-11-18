@@ -23,6 +23,16 @@ class _QuotationListScreenState extends State<QuotationListScreen> {
   final DateFormat _dateFormat = DateFormat('dd/MM/yyyy');
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<QuotationProvider>().fetchQuotations(refresh: true);
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _searchCtrl.dispose();
     _debounce?.cancel();
