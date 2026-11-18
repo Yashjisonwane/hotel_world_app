@@ -81,7 +81,7 @@ class MoreHubScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          user?.name ?? 'Admin User',
+                          user?.name ?? 'Hotel World User',
                           style: const TextStyle(
                             color: AppColors.white,
                             fontSize: 18,
@@ -90,7 +90,7 @@ class MoreHubScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          user?.email ?? 'admin@hotelworld.in',
+                          user?.email ?? '',
                           style: const TextStyle(color: AppColors.slate400, fontSize: 13),
                         ),
                         const SizedBox(height: 6),

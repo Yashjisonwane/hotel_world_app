@@ -13,8 +13,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController(text: 'admin@hotelworld.in');
-  final _passwordController = TextEditingController(text: 'HotelWorld@2026');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   VideoPlayerController? _videoCtrl;
 
@@ -224,7 +224,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
                               decoration: const InputDecoration(
-                                hintText: 'admin@hotelworld.in',
+                                hintText: 'Enter your email (e.g. staff@hotelworld.in)',
                                 prefixIcon: Icon(Icons.email_outlined, size: 20),
                               ),
                             ),
@@ -269,6 +269,102 @@ class _LoginScreenState extends State<LoginScreen> {
                                         ),
                                       )
                                     : const Text('Sign In'),
+                              ),
+                            ),
+
+                            const SizedBox(height: 18),
+
+                            // Quick 1-Click Login: Staff account ONLY (Admin is hidden)
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0F172A),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: const Color(0x7338BDF8),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text(
+                                        'QUICK 1-CLICK LOGIN',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFFFEF3C7),
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Tap to Login',
+                                        style: TextStyle(
+                                          fontSize: 9.5,
+                                          color: Colors.grey.shade400,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  InkWell(
+                                    onTap: auth.isLoading
+                                        ? null
+                                        : () {
+                                            _emailController.text = 'yash@gmail.com';
+                                            _passwordController.text = '112233';
+                                            _handleLogin();
+                                          },
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0x1F38BDF8),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: const Color(0x7338BDF8)),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          const Text(
+                                            'Staff Member',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF38BDF8),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          const Expanded(
+                                            child: Text(
+                                              'yash@gmail.com',
+                                              style: TextStyle(fontSize: 11, color: Color(0xFFCBD5E1)),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withOpacity(0.4),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: const Text(
+                                              'STAFF',
+                                              style: TextStyle(
+                                                fontSize: 8.5,
+                                                fontWeight: FontWeight.bold,
+                                                color: Color(0xFFE0F2FE),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
