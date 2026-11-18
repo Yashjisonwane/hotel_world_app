@@ -889,34 +889,121 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
               },
             ),
 
-            // TWO DASHED BUTTONS BELOW ITEMS (Matches Web Screenshot 3)
-            // 1. + Add Another Item (सामान जोड़ें)
-            InkWell(
-              onTap: () => qp.addNewBlankRow(),
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF60A5FA), width: 1.8),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(Icons.add, color: Color(0xFF1D4ED8), size: 18),
-                    SizedBox(width: 6),
-                    Text(
-                      '+ Add Another Item (सामान जोड़ें)',
-                      style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFF1D4ED8)),
-                    ),
-                  ],
+            // CLEAR ACTION BUTTONS BELOW ITEMS (Normal vs Machinery)
+            if (isMachinery) ...[
+              // 1. + Add Normal Item (Hotelware / Bartan)
+              InkWell(
+                onTap: () {
+                  final newItem = QuotationItem(
+                    serialNumber: qp.items.length + 1,
+                    name: '',
+                    quantity: 1.0,
+                    unit: 'Pcs',
+                    price: 0.0,
+                    gstRate: qp.gstMode == 'WITH_GST' ? 18.0 : 0.0,
+                    isGstAdded: qp.gstMode == 'WITH_GST',
+                    section: null,
+                    specification: null,
+                    size: null,
+                  );
+                  newItem.recalculate();
+                  qp.addItem(newItem);
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF2563EB), width: 1.8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.add_circle_outline, color: Color(0xFF1D4ED8), size: 18),
+                      SizedBox(width: 6),
+                      Text(
+                        '+ Normal Item Add Karein (Hotelware / Bartan)',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF1D4ED8)),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 8),
+              const SizedBox(height: 8),
 
-            // 2. + New Custom Product (नया कस्टम सामान जोड़ें)
+              // 2. + Add Machinery Item (Specs & Size)
+              InkWell(
+                onTap: () {
+                  final lastSec = qp.items.reversed.firstWhere(
+                    (it) => it.section != null && it.section!.trim().isNotEmpty,
+                    orElse: () => QuotationItem(name: '', section: 'EQUIPMENT SECTION'),
+                  ).section ?? 'EQUIPMENT SECTION';
+
+                  final newItem = QuotationItem(
+                    serialNumber: qp.items.length + 1,
+                    name: '',
+                    quantity: 1.0,
+                    unit: 'Pcs',
+                    price: 0.0,
+                    gstRate: qp.gstMode == 'WITH_GST' ? 18.0 : 0.0,
+                    isGstAdded: qp.gstMode == 'WITH_GST',
+                    section: lastSec,
+                  );
+                  newItem.recalculate();
+                  qp.addItem(newItem);
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F3FF),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF7C3AED), width: 1.8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.add_circle, color: Color(0xFF6D28D9), size: 18),
+                      SizedBox(width: 6),
+                      Text(
+                        '+ Machinery Item Add Karein (Specs & Size)',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF6D28D9)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ] else ...[
+              // Standard Mode: + Add Another Item
+              InkWell(
+                onTap: () => qp.addNewBlankRow(),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF60A5FA), width: 1.8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: const [
+                      Icon(Icons.add, color: Color(0xFF1D4ED8), size: 18),
+                      SizedBox(width: 6),
+                      Text(
+                        '+ Add Another Item (सामान जोड़ें)',
+                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFF1D4ED8)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+
+            // 3. + New Custom Product (नया कस्टम सामान जोड़ें)
             InkWell(
               onTap: () {
                 final newItem = QuotationItem(

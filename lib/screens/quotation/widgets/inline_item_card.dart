@@ -304,6 +304,8 @@ class _InlineItemCardState extends State<InlineItemCard> {
     final showPhotoSection = widget.isPhotoMode;
     final rowTotal = widget.item.grossAmount;
     final isWithoutGst = widget.gstMode == 'WITHOUT_GST';
+    final isNormal = (widget.item.section == null || widget.item.section!.trim().isEmpty) &&
+                     (widget.item.specification == null || widget.item.specification!.trim().isEmpty);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -418,6 +420,103 @@ class _InlineItemCardState extends State<InlineItemCard> {
             ),
           ),
 
+          // Clear Normal Item vs Machinery Item Switcher (1-Tap Selection)
+          if (widget.isMachinery)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+              child: Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFCBD5E1)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            _sectionCtrl.clear();
+                            _specCtrl.clear();
+                            _sizeCtrl.clear();
+                          });
+                          widget.onChanged(widget.item.copyWith(
+                            section: '',
+                            specification: '',
+                            size: '',
+                          ));
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 5),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: isNormal ? const Color(0xFF2563EB) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.check_circle, size: 12, color: isNormal ? Colors.white : Colors.transparent),
+                              if (isNormal) const SizedBox(width: 4),
+                              Text(
+                                'Normal Item',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: isNormal ? Colors.white : const Color(0xFF64748B),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          if (_sectionCtrl.text.trim().isEmpty) {
+                            setState(() {
+                              _sectionCtrl.text = 'EQUIPMENT SECTION';
+                            });
+                          }
+                          widget.onChanged(widget.item.copyWith(
+                            section: _sectionCtrl.text.trim(),
+                          ));
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 5),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: !isNormal ? const Color(0xFF7C3AED) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.check_circle, size: 12, color: !isNormal ? Colors.white : Colors.transparent),
+                              if (!isNormal) const SizedBox(width: 4),
+                              Text(
+                                'Machinery Item',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: !isNormal ? Colors.white : const Color(0xFF64748B),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
             child: Column(
@@ -510,7 +609,7 @@ class _InlineItemCardState extends State<InlineItemCard> {
                   ),
 
                 // MACHINERY EXTRA FIELDS
-                if (widget.isMachinery) ...[
+                if (widget.isMachinery && !isNormal) ...[
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.all(8),
@@ -606,6 +705,39 @@ class _InlineItemCardState extends State<InlineItemCard> {
                           ],
                         ),
                       ],
+                    ),
+                  ),
+                ] else if (widget.isMachinery && isNormal) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFBFDBFE)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            '✓ Normal Item (Specification box hidden)',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1E40AF)),
+                          ),
+                          InkWell(
+                            onTap: () {
+                              setState(() {
+                                _sectionCtrl.text = 'EQUIPMENT SECTION';
+                              });
+                              widget.onChanged(widget.item.copyWith(section: 'EQUIPMENT SECTION'));
+                            },
+                            child: const Text(
+                              '+ Add Specs',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF2563EB)),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
