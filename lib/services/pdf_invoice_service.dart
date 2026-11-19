@@ -628,8 +628,7 @@ class PdfInvoiceService {
                               pw.Text('NOTE : 100% ADVANCE PAYMENT', style: pw.TextStyle(color: PdfColors.white, fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
                               pw.Text('NOTE : DELIVERY : IN A WEEK', style: pw.TextStyle(color: PdfColors.white, fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
                               pw.Text('NOTE : PAYMENT METHOD : IMPS / CHEQUE / CASH', style: pw.TextStyle(color: PdfColors.white, fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
-                              if (hasGst)
-                                pw.Text('NOTE : GST - EXTRA AND AS MENTIONED', style: pw.TextStyle(color: PdfColors.white, fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
+                              pw.Text('NOTE : GST - EXTRA AND AS MENTIONED', style: pw.TextStyle(color: PdfColors.white, fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
                               pw.Text('OTHER CHARG - EXTRA', style: pw.TextStyle(color: PdfColor.fromHex('#EF4444'), fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
                               pw.Text('FREIGHT - EXTRA', style: pw.TextStyle(color: PdfColor.fromHex('#EF4444'), fontSize: 7.5, fontWeight: pw.FontWeight.bold)),
                             ],
