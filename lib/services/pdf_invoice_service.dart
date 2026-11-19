@@ -460,7 +460,7 @@ class PdfInvoiceService {
                                     formatInteger(it.price),
                                     style: const pw.TextStyle(fontSize: 8),
                                   ),
-                                  if (it.isGstInclusive || RegExp(r'\binc[\s.]*gst\b', caseSensitive: false).hasMatch(it.name)) ...[
+                                  if (it.isGstInclusive || RegExp(r'\b(inc[\s.]*gst|inclusive)\b', caseSensitive: false).hasMatch('${it.name} ${it.gstText ?? ''}')) ...[
                                     pw.SizedBox(width: 2),
                                     pw.Text(
                                       '(Inc. GST)',
@@ -643,12 +643,22 @@ class PdfInvoiceService {
                             children: [
                               if (quotation.rateGivenBy != null && quotation.rateGivenBy!.isNotEmpty) ...[
                                 pw.Text('RATE GIVEN BY:', style: const pw.TextStyle(color: PdfColors.grey400, fontSize: 6.5)),
-                                pw.Text(quotation.rateGivenBy!.toLowerCase(), style: pw.TextStyle(color: PdfColors.white, fontSize: 8.5, fontWeight: pw.FontWeight.bold)),
+                                pw.Text(
+                                  quotation.rateGivenByPhone != null && quotation.rateGivenByPhone!.trim().isNotEmpty
+                                      ? '${quotation.rateGivenBy!.trim()} (Mob: ${quotation.rateGivenByPhone!.trim()})'
+                                      : quotation.rateGivenBy!.trim(),
+                                  style: pw.TextStyle(color: PdfColors.white, fontSize: 8.5, fontWeight: pw.FontWeight.bold),
+                                ),
                                 pw.SizedBox(height: 2),
                               ],
                               if (quotation.preparedBy != null && quotation.preparedBy!.isNotEmpty) ...[
                                 pw.Text('QUOTATION PREPARED BY:', style: const pw.TextStyle(color: PdfColors.grey400, fontSize: 6.5)),
-                                pw.Text(quotation.preparedBy!.toLowerCase(), style: pw.TextStyle(color: PdfColors.white, fontSize: 8.5, fontWeight: pw.FontWeight.bold)),
+                                pw.Text(
+                                  quotation.preparedByPhone != null && quotation.preparedByPhone!.trim().isNotEmpty
+                                      ? '${quotation.preparedBy!.trim()} (Mob: ${quotation.preparedByPhone!.trim()})'
+                                      : quotation.preparedBy!.trim(),
+                                  style: pw.TextStyle(color: PdfColors.white, fontSize: 8.5, fontWeight: pw.FontWeight.bold),
+                                ),
                                 pw.SizedBox(height: 6),
                               ],
                               pw.Text('FOR HOTEL WORLD', style: pw.TextStyle(color: PdfColors.white, fontSize: 8.5, fontWeight: pw.FontWeight.bold)),

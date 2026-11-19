@@ -28,7 +28,9 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
   final _customerGstinCtrl = TextEditingController();
 
   final _preparedByCtrl = TextEditingController();
+  final _preparedByPhoneCtrl = TextEditingController();
   final _rateGivenByCtrl = TextEditingController();
+  final _rateGivenByPhoneCtrl = TextEditingController();
 
   final _deliveryCtrl = TextEditingController(text: '0');
   final _packingCtrl = TextEditingController(text: '0');
@@ -56,7 +58,9 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
       _customerGstinCtrl.text = qp.customerGstin;
 
       _preparedByCtrl.text = qp.preparedBy ?? '';
+      _preparedByPhoneCtrl.text = qp.preparedByPhone ?? '';
       _rateGivenByCtrl.text = qp.rateGivenBy ?? '';
+      _rateGivenByPhoneCtrl.text = qp.rateGivenByPhone ?? '';
 
       _deliveryCtrl.text = qp.deliveryCharges > 0 ? qp.deliveryCharges.toStringAsFixed(0) : '';
       _packingCtrl.text = qp.packingCharges > 0 ? qp.packingCharges.toStringAsFixed(0) : '';
@@ -83,7 +87,9 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
     _customerAddressCtrl.dispose();
     _customerGstinCtrl.dispose();
     _preparedByCtrl.dispose();
+    _preparedByPhoneCtrl.dispose();
     _rateGivenByCtrl.dispose();
+    _rateGivenByPhoneCtrl.dispose();
     _deliveryCtrl.dispose();
     _packingCtrl.dispose();
     _previousCtrl.dispose();
@@ -1357,6 +1363,7 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
                 border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Column(
@@ -1370,9 +1377,24 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
                           decoration: InputDecoration(
                             contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                             isDense: true,
+                            hintText: 'Staff Name',
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
                           ),
                           onChanged: (v) => qp.setQuotationMeta(preparedBy: v),
+                        ),
+                        const SizedBox(height: 4),
+                        TextField(
+                          controller: _preparedByPhoneCtrl,
+                          keyboardType: TextInputType.phone,
+                          style: const TextStyle(fontSize: 11.5),
+                          decoration: InputDecoration(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                            isDense: true,
+                            hintText: 'Mobile (Optional)',
+                            hintStyle: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                          ),
+                          onChanged: (v) => qp.setQuotationMeta(preparedByPhone: v),
                         ),
                       ],
                     ),
@@ -1390,9 +1412,24 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
                           decoration: InputDecoration(
                             contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                             isDense: true,
+                            hintText: 'Manager Name',
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: Color(0xFFCBD5E1))),
                           ),
                           onChanged: (v) => qp.setQuotationMeta(rateGivenBy: v),
+                        ),
+                        const SizedBox(height: 4),
+                        TextField(
+                          controller: _rateGivenByPhoneCtrl,
+                          keyboardType: TextInputType.phone,
+                          style: const TextStyle(fontSize: 11.5),
+                          decoration: InputDecoration(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                            isDense: true,
+                            hintText: 'Mobile (Optional)',
+                            hintStyle: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                          ),
+                          onChanged: (v) => qp.setQuotationMeta(rateGivenByPhone: v),
                         ),
                       ],
                     ),

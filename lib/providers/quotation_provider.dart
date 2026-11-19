@@ -31,7 +31,9 @@ class QuotationProvider extends ChangeNotifier {
   String _quotationType = 'STANDARD'; // 'STANDARD' or 'MACHINERY'
   String _documentTitle = 'QUOTATION';
   String? _preparedBy;
+  String? _preparedByPhone;
   String? _rateGivenBy;
+  String? _rateGivenByPhone;
   String _gstMode = 'WITH_GST'; // 'WITH_GST' or 'WITHOUT_GST'
 
   List<QuotationItem> _items = [];
@@ -85,7 +87,9 @@ class QuotationProvider extends ChangeNotifier {
   String get quotationType => _quotationType;
   String get documentTitle => _documentTitle;
   String? get preparedBy => _preparedBy;
+  String? get preparedByPhone => _preparedByPhone;
   String? get rateGivenBy => _rateGivenBy;
+  String? get rateGivenByPhone => _rateGivenByPhone;
   String get gstMode => _gstMode;
 
   List<QuotationItem> get items => _items;
@@ -199,7 +203,9 @@ class QuotationProvider extends ChangeNotifier {
     _quotationType = 'STANDARD';
     _documentTitle = 'QUOTATION';
     _preparedBy = null;
+    _preparedByPhone = null;
     _rateGivenBy = null;
+    _rateGivenByPhone = null;
     _gstMode = 'WITH_GST';
     _items = [];
     _packingCharges = 0.0;
@@ -241,7 +247,9 @@ class QuotationProvider extends ChangeNotifier {
     _quotationType = q.quotationType;
     _documentTitle = q.documentTitle;
     _preparedBy = q.preparedBy;
+    _preparedByPhone = q.preparedByPhone;
     _rateGivenBy = q.rateGivenBy;
+    _rateGivenByPhone = q.rateGivenByPhone;
     _packingCharges = q.packingCharges;
     _deliveryCharges = q.deliveryCharges;
     _previousCharges = q.previousCharges;
@@ -332,7 +340,9 @@ class QuotationProvider extends ChangeNotifier {
     String? presentationMode,
     String? quotationType,
     String? preparedBy,
+    String? preparedByPhone,
     String? rateGivenBy,
+    String? rateGivenByPhone,
   }) {
     if (quotationNumber != null) _quotationNumber = quotationNumber;
     if (date != null) _quotationDate = date;
@@ -340,7 +350,9 @@ class QuotationProvider extends ChangeNotifier {
     if (presentationMode != null) _presentationMode = presentationMode;
     if (quotationType != null) _quotationType = quotationType;
     if (preparedBy != null) _preparedBy = preparedBy;
+    if (preparedByPhone != null) _preparedByPhone = preparedByPhone;
     if (rateGivenBy != null) _rateGivenBy = rateGivenBy;
+    if (rateGivenByPhone != null) _rateGivenByPhone = rateGivenByPhone;
     notifyListeners();
   }
 
@@ -512,7 +524,9 @@ class QuotationProvider extends ChangeNotifier {
       quotationType: _quotationType,
       documentTitle: _documentTitle,
       preparedBy: _preparedBy,
+      preparedByPhone: _preparedByPhone,
       rateGivenBy: _rateGivenBy,
+      rateGivenByPhone: _rateGivenByPhone,
       totalNet: totalNetAmt,
       totalGst: totalGstAmt,
       installationCharges: totalInstallationAmt,
@@ -546,7 +560,9 @@ class QuotationProvider extends ChangeNotifier {
     _quotationType = original.quotationType;
     _documentTitle = original.documentTitle;
     _preparedBy = original.preparedBy ?? '';
+    _preparedByPhone = original.preparedByPhone ?? '';
     _rateGivenBy = original.rateGivenBy ?? '';
+    _rateGivenByPhone = original.rateGivenByPhone ?? '';
     _gstMode = original.totalGst > 0 ? 'WITH_GST' : 'WITHOUT_GST';
 
     _deliveryCharges = original.deliveryCharges;
@@ -590,7 +606,9 @@ class QuotationProvider extends ChangeNotifier {
         'quotationType': _quotationType,
         'documentTitle': _documentTitle,
         'preparedBy': _preparedBy,
+        'preparedByPhone': _preparedByPhone,
         'rateGivenBy': _rateGivenBy,
+        'rateGivenByPhone': _rateGivenByPhone,
         'totalNet': totalNetAmt,
         'totalGst': totalGstAmt,
         'installationCharges': totalInstallationAmt,

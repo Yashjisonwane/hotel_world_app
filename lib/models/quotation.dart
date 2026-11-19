@@ -24,7 +24,9 @@ class Quotation {
   final double overallDiscount;
   final double finalAmount;
   final String? preparedBy;
+  final String? preparedByPhone;
   final String? rateGivenBy;
+  final String? rateGivenByPhone;
   final String documentTitle; // 'QUOTATION', 'ESTIMATE', 'PROFORMA INVOICE'
   final String? createdById;
   final String? createdByEmail;
@@ -57,7 +59,9 @@ class Quotation {
     this.overallDiscount = 0.0,
     this.finalAmount = 0.0,
     this.preparedBy,
+    this.preparedByPhone,
     this.rateGivenBy,
+    this.rateGivenByPhone,
     this.documentTitle = 'QUOTATION',
     this.createdById,
     this.createdByEmail,
@@ -110,7 +114,9 @@ class Quotation {
       overallDiscount: double.tryParse(json['overallDiscount']?.toString() ?? '0') ?? 0.0,
       finalAmount: double.tryParse(json['finalAmount']?.toString() ?? '0') ?? 0.0,
       preparedBy: json['preparedBy']?.toString(),
+      preparedByPhone: json['preparedByPhone']?.toString(),
       rateGivenBy: json['rateGivenBy']?.toString(),
+      rateGivenByPhone: json['rateGivenByPhone']?.toString(),
       documentTitle: json['documentTitle']?.toString() ?? 'QUOTATION',
       createdById: json['createdById']?.toString(),
       createdByEmail: json['createdByEmail']?.toString(),
@@ -146,7 +152,9 @@ class Quotation {
       'overallDiscount': overallDiscount,
       'finalAmount': finalAmount,
       'preparedBy': preparedBy,
+      'preparedByPhone': preparedByPhone,
       'rateGivenBy': rateGivenBy,
+      'rateGivenByPhone': rateGivenByPhone,
       'documentTitle': documentTitle,
       'createdById': createdById,
       'createdByEmail': createdByEmail,
