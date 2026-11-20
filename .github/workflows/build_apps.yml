@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: 'Release Tag (e.g. v1.0.0 or v1.0.1)'
+        description: 'Release Tag (leave empty to use version from pubspec.yaml, e.g. v1.0.12)'
         required: false
-        default: 'v1.0.0'
+        default: ''
 
 jobs:
   build-android:
@@ -87,6 +87,9 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
       - name: Download Android Artifact
         uses: actions/download-artifact@v4
         with:
@@ -108,8 +111,8 @@ jobs:
           elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
             echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           else
-            VERSION=$(grep 'version:' pubspec.yaml | head -n 1 | sed 's/version: //' | cut -d '+' -f 1 | tr -d ' \r\n')
-            echo "TAG=v${VERSION:-1.0.1}" >> $GITHUB_OUTPUT
+            VERSION=$(grep '^version:' pubspec.yaml | head -n 1 | sed 's/version: //' | cut -d '+' -f 1 | tr -d ' \r\n')
+            echo "TAG=v${VERSION:-1.0.12}" >> $GITHUB_OUTPUT
           fi
 
       - name: Create or Update GitHub Release
@@ -117,6 +120,8 @@ jobs:
         with:
           tag_name: ${{ steps.vars.outputs.TAG }}
           name: Hotel World App ${{ steps.vars.outputs.TAG }}
+          make_latest: true
+          generate_release_notes: false
           body: |
             Hotel World Official Production Release (${{ steps.vars.outputs.TAG }})
             
