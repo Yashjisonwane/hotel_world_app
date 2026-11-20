@@ -488,7 +488,7 @@ class PdfInvoiceService {
                                 padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 2),
                                 alignment: pw.Alignment.center,
                                 child: pw.Text(
-                                  it.gstRate == 0 ? '0% inc.' : '${it.gstRate.toInt()}%',
+                                  it.gstRate == 0 ? (it.isGstInclusive ? '0% inc.' : '0%') : '${it.gstRate.toInt()}%',
                                   style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
                                 ),
                               ),
