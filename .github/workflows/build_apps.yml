@@ -50,6 +50,7 @@ jobs:
   build-ios:
     name: 🍎 Build iOS IPA
     runs-on: macos-latest
+    continue-on-error: true
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -81,6 +82,7 @@ jobs:
   publish-release:
     name: 🚀 Publish GitHub Release
     needs: [build-android, build-ios]
+    if: always() && needs.build-android.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -93,6 +95,7 @@ jobs:
 
       - name: Download iOS Artifact
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: HotelWorld-iOS-IPA
           path: release-files
