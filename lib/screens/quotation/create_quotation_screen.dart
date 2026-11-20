@@ -329,7 +329,7 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
         final sec = (it.section ?? '').replaceAll('"', '""');
         final spec = (it.specification ?? '').replaceAll('"', '""');
         final size = (it.size ?? '').replaceAll('"', '""');
-        buffer.writeln('${i + 1},"$name","$sec","$spec","$size",${it.quantity},"${it.unit}",${it.price},${it.netAmount},${it.gstRate}%,${it.grossAmount}');
+        buffer.writeln('${i + 1},"$name","$sec","$spec","$size",${it.quantity},"${it.unit}",${it.price},${it.netAmount},${it.gstRate == 0 ? "0% inc." : "${it.gstRate}%"},${it.grossAmount}');
       }
 
       buffer.writeln('');

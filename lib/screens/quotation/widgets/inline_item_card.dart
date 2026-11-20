@@ -1056,11 +1056,17 @@ class _InlineItemCardState extends State<InlineItemCard> {
                                 value: [0.0, 5.0, 12.0, 18.0, 28.0].contains(_gstRate) ? _gstRate : 18.0,
                                 style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                                 items: [0.0, 5.0, 12.0, 18.0, 28.0]
-                                    .map((r) => DropdownMenuItem(value: r, child: Text('${r.toInt()}%')))
+                                    .map((r) => DropdownMenuItem(value: r, child: Text(r == 0 ? '0% inc.' : '${r.toInt()}%')))
                                     .toList(),
                                 onChanged: (val) {
                                   if (val != null) {
-                                    setState(() => _gstRate = val);
+                                    setState(() {
+                                      _gstRate = val;
+                                      if (val == 0.0) {
+                                        _isGstAdded = false;
+                                        widget.item.isGstInclusive = true;
+                                      }
+                                    });
                                     _notifyChange();
                                   }
                                 },
