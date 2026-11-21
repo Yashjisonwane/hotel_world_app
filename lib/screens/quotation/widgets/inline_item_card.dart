@@ -53,6 +53,7 @@ class _InlineItemCardState extends State<InlineItemCard> {
   // Search / Autocomplete state
   Timer? _debounceTimer;
   List<Product> _suggestions = [];
+  List<String> _aiSuggestions = [];
   bool _showSuggestions = false;
   final FocusNode _nameFocusNode = FocusNode();
 
@@ -165,16 +166,17 @@ class _InlineItemCardState extends State<InlineItemCard> {
     if (query.trim().isEmpty) {
       setState(() {
         _suggestions = [];
+        _aiSuggestions = [];
         _showSuggestions = false;
       });
       return;
     }
 
-    _debounceTimer = Timer(const Duration(milliseconds: 200), () async {
+    _debounceTimer = Timer(const Duration(milliseconds: 250), () async {
       final qLower = query.toLowerCase().trim();
       final localProducts = context.read<ProductProvider>().products;
 
-      // 1. Search local products
+      // 1. Instant local products check
       final localMatches = localProducts.where((p) {
         final name = p.name.toLowerCase();
         final sku = (p.itemCode).toLowerCase();
@@ -182,26 +184,35 @@ class _InlineItemCardState extends State<InlineItemCard> {
         return name.contains(qLower) || sku.contains(qLower) || cat.contains(qLower);
       }).take(10).toList();
 
-      if (localMatches.isNotEmpty) {
-        if (mounted) {
+      if (mounted) {
+        setState(() {
+          _suggestions = localMatches;
+          _showSuggestions = localMatches.isNotEmpty;
+        });
+      }
+
+      // 2. Query Hybrid AI Search API on backend
+      try {
+        final res = await ApiService().searchProductsAi(qLower, limit: 15);
+        final aiProds = res['products'] as List<Product>;
+        final aiSugg = res['aiSuggestions'] as List<String>;
+
+        if (mounted && _nameCtrl.text.trim().toLowerCase() == qLower) {
           setState(() {
-            _suggestions = localMatches;
-            _showSuggestions = true;
+            _aiSuggestions = aiSugg;
+            if (aiProds.isNotEmpty) {
+              final Set<int> seen = _suggestions.map((p) => p.id).toSet();
+              for (final p in aiProds) {
+                if (!seen.contains(p.id)) {
+                  _suggestions.add(p);
+                  seen.add(p.id);
+                }
+              }
+            }
+            _showSuggestions = _suggestions.isNotEmpty || _aiSuggestions.isNotEmpty;
           });
         }
-      } else {
-        // 2. Search online catalog
-        try {
-          final res = await ApiService().getProducts(search: qLower, limit: 10);
-          final onlineMatches = res['products'] as List<Product>;
-          if (mounted) {
-            setState(() {
-              _suggestions = onlineMatches;
-              _showSuggestions = onlineMatches.isNotEmpty;
-            });
-          }
-        } catch (_) {}
-      }
+      } catch (_) {}
     });
   }
 
@@ -560,11 +571,11 @@ class _InlineItemCardState extends State<InlineItemCard> {
                   ),
                 ),
 
-                // AUTOCOMPLETE DROPDOWN
-                if (_showSuggestions && _suggestions.isNotEmpty)
+                // AUTOCOMPLETE DROPDOWN (AI Suggestions + Catalogue Products)
+                if (_showSuggestions && (_suggestions.isNotEmpty || _aiSuggestions.isNotEmpty))
                   Container(
                     margin: const EdgeInsets.only(top: 4),
-                    constraints: const BoxConstraints(maxHeight: 200),
+                    constraints: const BoxConstraints(maxHeight: 250),
                     decoration: BoxDecoration(
                       color: AppColors.white,
                       borderRadius: BorderRadius.circular(8),
@@ -577,34 +588,114 @@ class _InlineItemCardState extends State<InlineItemCard> {
                         ),
                       ],
                     ),
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      padding: EdgeInsets.zero,
-                      itemCount: _suggestions.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                      itemBuilder: (ctx, sIdx) {
-                        final prod = _suggestions[sIdx];
-                        return ListTile(
-                          dense: true,
-                          visualDensity: VisualDensity.compact,
-                          title: Text(
-                            prod.name,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: Color(0xFF0F172A)),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // AI SUGGESTIONS HEADER & QUICK-TAP CHIPS
+                        if (_aiSuggestions.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFF5F3FF),
+                              border: Border(bottom: BorderSide(color: Color(0xFFDDD6FE))),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Row(
+                                  children: [
+                                    Icon(Icons.auto_awesome, size: 13, color: Color(0xFF7C3AED)),
+                                    SizedBox(width: 5),
+                                    Text(
+                                      'AI Suggestions:',
+                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF6D28D9)),
+                                    ),
+                                    Spacer(),
+                                    Text('Tap to select', style: TextStyle(fontSize: 10, color: Color(0xFF8B5CF6))),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 6,
+                                  children: _aiSuggestions.map((sug) {
+                                    final upper = sug.toUpperCase();
+                                    return InkWell(
+                                      onTap: () {
+                                        setState(() {
+                                          _nameCtrl.text = upper;
+                                          _suggestions = [];
+                                          _aiSuggestions = [];
+                                          _showSuggestions = false;
+                                        });
+                                        _notifyChange();
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(5),
+                                          border: Border.all(color: const Color(0xFFC4B5FD)),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(Icons.auto_awesome, size: 11, color: Color(0xFF7C3AED)),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              upper,
+                                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF5B21B6)),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                ),
+                              ],
+                            ),
                           ),
-                          subtitle: Text(
-                            [
-                              if (prod.itemCode.isNotEmpty) prod.itemCode,
-                              if (prod.category.isNotEmpty) prod.category,
-                            ].join(' • '),
-                            style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+
+                        // CATALOG PRODUCTS
+                        if (_suggestions.isNotEmpty)
+                          Flexible(
+                            child: ListView.separated(
+                              shrinkWrap: true,
+                              padding: EdgeInsets.zero,
+                              itemCount: _suggestions.length,
+                              separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                              itemBuilder: (ctx, sIdx) {
+                                final prod = _suggestions[sIdx];
+                                return ListTile(
+                                  dense: true,
+                                  visualDensity: VisualDensity.compact,
+                                  title: Text(
+                                    prod.name,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12.5, color: Color(0xFF0F172A)),
+                                  ),
+                                  subtitle: Text(
+                                    [
+                                      if (prod.itemCode.isNotEmpty) prod.itemCode,
+                                      if (prod.category.isNotEmpty) prod.category,
+                                    ].join(' • '),
+                                    style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B)),
+                                  ),
+                                  trailing: Text(
+                                    '₹${prod.sellingPrice > 0 ? prod.sellingPrice.toStringAsFixed(0) : "0"}',
+                                    style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFFD97706), fontSize: 12.5),
+                                  ),
+                                  onTap: () {
+                                    setState(() {
+                                      _aiSuggestions = [];
+                                    });
+                                    _selectProduct(prod);
+                                  },
+                                );
+                              },
+                            ),
                           ),
-                          trailing: Text(
-                            '₹${prod.sellingPrice > 0 ? prod.sellingPrice.toStringAsFixed(0) : "0"}',
-                            style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFFD97706), fontSize: 12.5),
-                          ),
-                          onTap: () => _selectProduct(prod),
-                        );
-                      },
+                      ],
                     ),
                   ),
 

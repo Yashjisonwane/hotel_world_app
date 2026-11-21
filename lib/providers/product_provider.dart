@@ -78,6 +78,19 @@ class ProductProvider extends ChangeNotifier {
     }
 
     try {
+      if (_searchQuery.trim().isNotEmpty && refresh) {
+        final aiRes = await _apiService.searchProductsAi(_searchQuery.trim(), limit: 40);
+        final aiProducts = aiRes['products'] as List<Product>;
+        if (aiProducts.isNotEmpty) {
+          _products = aiProducts;
+          _totalCount = aiProducts.length;
+          _totalPages = 1;
+          _isLoading = false;
+          notifyListeners();
+          return;
+        }
+      }
+
       final res = await _apiService.getProducts(
         page: _currentPage,
         limit: 30,

@@ -163,6 +163,37 @@ class ApiService {
     }
   }
 
+  /// Hybrid AI Semantic Search for Indian kitchen equipment
+  Future<Map<String, dynamic>> searchProductsAi(String query, {int limit = 30}) async {
+    try {
+      final res = await _dio.get(
+        ApiConstants.productSearch,
+        queryParameters: {'q': query.trim(), 'limit': limit},
+      );
+      if (res.data != null && res.data['success'] == true) {
+        final List rawResults = res.data['results'] is List ? res.data['results'] : [];
+        final products = rawResults.map((p) => Product.fromJson(p)).toList();
+
+        final List rawSugg = res.data['aiSuggestions'] is List ? res.data['aiSuggestions'] : [];
+        final suggestions = rawSugg
+            .map((s) => s.toString().trim())
+            .where((s) => s.isNotEmpty && !RegExp(r'^\d+$').hasMatch(s))
+            .toList();
+
+        final interpretation = res.data['aiInterpretation']?.toString();
+
+        return {
+          'products': products,
+          'aiSuggestions': suggestions,
+          'aiInterpretation': interpretation,
+        };
+      }
+      return {'products': <Product>[], 'aiSuggestions': <String>[], 'aiInterpretation': null};
+    } catch (e) {
+      return {'products': <Product>[], 'aiSuggestions': <String>[], 'aiInterpretation': null};
+    }
+  }
+
   Future<List<String>> getCategories() async {
     try {
       final res = await _dio.get(ApiConstants.productCategories);
