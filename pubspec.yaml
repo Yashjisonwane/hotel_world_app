@@ -2,7 +2,7 @@ name: hotel_world_app
 description: "Hotel World - Commercial Hospitality & Kitchen Equipment Quotation Management Mobile App"
 publish_to: 'none'
 
-version: 1.0.12+13
+version: 1.0.13+14
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
