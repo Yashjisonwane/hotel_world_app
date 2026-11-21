@@ -216,11 +216,16 @@ class _InlineItemCardState extends State<InlineItemCard> {
                 }
               }
             }
-            _showSuggestions = _suggestions.isNotEmpty || _aiSuggestions.isNotEmpty;
+            _showSuggestions = _nameCtrl.text.trim().isNotEmpty;
           });
         }
       } catch (_) {
-        if (mounted) setState(() => _isAiSearching = false);
+        if (mounted) {
+          setState(() {
+            _isAiSearching = false;
+            _showSuggestions = _nameCtrl.text.trim().isNotEmpty;
+          });
+        }
       }
     });
   }
@@ -581,10 +586,10 @@ class _InlineItemCardState extends State<InlineItemCard> {
                 ),
 
                 // AUTOCOMPLETE DROPDOWN (AI Suggestions + Catalogue Products)
-                if (_showSuggestions && (_suggestions.isNotEmpty || _aiSuggestions.isNotEmpty || _isAiSearching))
+                if (_showSuggestions && _nameCtrl.text.trim().isNotEmpty && (_suggestions.isNotEmpty || _aiSuggestions.isNotEmpty || _isAiSearching || _nameCtrl.text.trim().length >= 2))
                   Container(
                     margin: const EdgeInsets.only(top: 4),
-                    constraints: const BoxConstraints(maxHeight: 250),
+                    constraints: const BoxConstraints(maxHeight: 280),
                     decoration: BoxDecoration(
                       color: AppColors.white,
                       borderRadius: BorderRadius.circular(8),
@@ -601,7 +606,7 @@ class _InlineItemCardState extends State<InlineItemCard> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // AI SEARCHING SPINNER BANNER
+                        // AI SEARCHING SPINNER BANNER (White-labeled)
                         if (_isAiSearching && _aiSuggestions.isEmpty && _suggestions.isEmpty)
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -615,7 +620,7 @@ class _InlineItemCardState extends State<InlineItemCard> {
                                 ),
                                 SizedBox(width: 8),
                                 Text(
-                                  'Gemini AI searching catalogue...',
+                                  'Searching catalogue...',
                                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF7C3AED)),
                                 ),
                               ],
@@ -642,7 +647,7 @@ class _InlineItemCardState extends State<InlineItemCard> {
                                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF6D28D9)),
                                     ),
                                     Spacer(),
-                                    Text('Tap to select', style: TextStyle(fontSize: 10, color: Color(0xFF8B5CF6))),
+                                    Text('Tap to search catalog', style: TextStyle(fontSize: 10, color: Color(0xFF8B5CF6))),
                                   ],
                                 ),
                                 const SizedBox(height: 6),
@@ -653,13 +658,9 @@ class _InlineItemCardState extends State<InlineItemCard> {
                                     final upper = sug.toUpperCase();
                                     return InkWell(
                                       onTap: () {
-                                        setState(() {
-                                          _nameCtrl.text = upper;
-                                          _suggestions = [];
-                                          _aiSuggestions = [];
-                                          _showSuggestions = false;
-                                        });
+                                        _nameCtrl.text = upper;
                                         _notifyChange();
+                                        _onNameChanged(upper);
                                       },
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -723,6 +724,47 @@ class _InlineItemCardState extends State<InlineItemCard> {
                                   },
                                 );
                               },
+                            ),
+                          ),
+
+                        // EMPTY FALLBACK WITH DIRECT CUSTOM PRODUCT USE
+                        if (!_isAiSearching && _suggestions.isEmpty && _aiSuggestions.isEmpty && _nameCtrl.text.trim().isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'No catalog items for "${_nameCtrl.text.trim()}"',
+                                    style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B), fontStyle: FontStyle.italic),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      _showSuggestions = false;
+                                    });
+                                    _notifyChange();
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFEFF6FF),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(color: const Color(0xFFBFDBFE)),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.add, size: 13, color: Color(0xFF2563EB)),
+                                        SizedBox(width: 4),
+                                        Text('Keep as Custom Item', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1D4ED8))),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                       ],

@@ -174,15 +174,31 @@ class ApiService {
       );
       if (res.data != null && res.data['success'] == true) {
         final List rawResults = res.data['results'] is List ? res.data['results'] : [];
-        final products = rawResults.map((p) => Product.fromJson(p)).toList();
+        final List<Product> products = [];
+        for (final item in rawResults) {
+          try {
+            if (item is Map<String, dynamic>) {
+              products.add(Product.fromJson(item));
+            } else if (item is Map) {
+              products.add(Product.fromJson(Map<String, dynamic>.from(item)));
+            }
+          } catch (_) {}
+        }
 
         final List rawSugg = res.data['aiSuggestions'] is List ? res.data['aiSuggestions'] : [];
-        final suggestions = rawSugg
+        List<String> suggestions = rawSugg
             .map((s) => s.toString().trim())
             .where((s) => s.isNotEmpty && !RegExp(r'^\d+$').hasMatch(s))
             .toList();
 
         final interpretation = res.data['aiInterpretation']?.toString();
+        if (suggestions.isEmpty && interpretation != null && interpretation.trim().isNotEmpty) {
+          suggestions = interpretation
+              .split(',')
+              .map((s) => s.trim().replaceAll('"', '').replaceAll("'", ''))
+              .where((s) => s.isNotEmpty && !RegExp(r'^\d+$').hasMatch(s))
+              .toList();
+        }
 
         return {
           'products': products,
