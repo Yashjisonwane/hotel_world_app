@@ -41,7 +41,7 @@ class Product {
       itemCode: json['itemCode']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
       category: json['category']?.toString() ?? 'General',
-      sellingPrice: double.tryParse(json['sellingPrice']?.toString() ?? '0') ?? 0.0,
+      sellingPrice: double.tryParse(json['sellingPrice']?.toString() ?? json['sellingRate']?.toString() ?? json['price']?.toString() ?? '0') ?? 0.0,
       purchasePrice: json['purchasePrice'] != null ? double.tryParse(json['purchasePrice'].toString()) : null,
       mrp: json['mrp'] != null ? double.tryParse(json['mrp'].toString()) : null,
       unit: json['unit']?.toString() ?? 'Pcs',

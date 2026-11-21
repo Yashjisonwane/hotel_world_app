@@ -55,6 +55,7 @@ class _InlineItemCardState extends State<InlineItemCard> {
   List<Product> _suggestions = [];
   List<String> _aiSuggestions = [];
   bool _showSuggestions = false;
+  bool _isAiSearching = false;
   final FocusNode _nameFocusNode = FocusNode();
 
   @override
@@ -78,8 +79,12 @@ class _InlineItemCardState extends State<InlineItemCard> {
     _imageUrl = widget.item.imageUrl;
 
     _nameFocusNode.addListener(() {
-      if (!_nameFocusNode.hasFocus) {
-        Future.delayed(const Duration(milliseconds: 200), () {
+      if (_nameFocusNode.hasFocus) {
+        if (_nameCtrl.text.trim().length >= 2) {
+          _onNameChanged(_nameCtrl.text);
+        }
+      } else {
+        Future.delayed(const Duration(milliseconds: 300), () {
           if (mounted) setState(() => _showSuggestions = false);
         });
       }
@@ -172,7 +177,7 @@ class _InlineItemCardState extends State<InlineItemCard> {
       return;
     }
 
-    _debounceTimer = Timer(const Duration(milliseconds: 250), () async {
+    _debounceTimer = Timer(const Duration(milliseconds: 200), () async {
       final qLower = query.toLowerCase().trim();
       final localProducts = context.read<ProductProvider>().products;
 
@@ -187,7 +192,8 @@ class _InlineItemCardState extends State<InlineItemCard> {
       if (mounted) {
         setState(() {
           _suggestions = localMatches;
-          _showSuggestions = localMatches.isNotEmpty;
+          _isAiSearching = true;
+          _showSuggestions = true;
         });
       }
 
@@ -199,6 +205,7 @@ class _InlineItemCardState extends State<InlineItemCard> {
 
         if (mounted && _nameCtrl.text.trim().toLowerCase() == qLower) {
           setState(() {
+            _isAiSearching = false;
             _aiSuggestions = aiSugg;
             if (aiProds.isNotEmpty) {
               final Set<int> seen = _suggestions.map((p) => p.id).toSet();
@@ -212,7 +219,9 @@ class _InlineItemCardState extends State<InlineItemCard> {
             _showSuggestions = _suggestions.isNotEmpty || _aiSuggestions.isNotEmpty;
           });
         }
-      } catch (_) {}
+      } catch (_) {
+        if (mounted) setState(() => _isAiSearching = false);
+      }
     });
   }
 
@@ -572,7 +581,7 @@ class _InlineItemCardState extends State<InlineItemCard> {
                 ),
 
                 // AUTOCOMPLETE DROPDOWN (AI Suggestions + Catalogue Products)
-                if (_showSuggestions && (_suggestions.isNotEmpty || _aiSuggestions.isNotEmpty))
+                if (_showSuggestions && (_suggestions.isNotEmpty || _aiSuggestions.isNotEmpty || _isAiSearching))
                   Container(
                     margin: const EdgeInsets.only(top: 4),
                     constraints: const BoxConstraints(maxHeight: 250),
@@ -592,6 +601,27 @@ class _InlineItemCardState extends State<InlineItemCard> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        // AI SEARCHING SPINNER BANNER
+                        if (_isAiSearching && _aiSuggestions.isEmpty && _suggestions.isEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            color: const Color(0xFFF5F3FF),
+                            child: const Row(
+                              children: [
+                                SizedBox(
+                                  width: 14,
+                                  height: 14,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF7C3AED)),
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  'Gemini AI searching catalogue...',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF7C3AED)),
+                                ),
+                              ],
+                            ),
+                          ),
+
                         // AI SUGGESTIONS HEADER & QUICK-TAP CHIPS
                         if (_aiSuggestions.isNotEmpty)
                           Container(

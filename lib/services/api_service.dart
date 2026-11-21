@@ -166,8 +166,10 @@ class ApiService {
   /// Hybrid AI Semantic Search for Indian kitchen equipment
   Future<Map<String, dynamic>> searchProductsAi(String query, {int limit = 30}) async {
     try {
+      final base = ApiConstants.getBaseApi(currentBackendUrl);
+      final cleanBase = base.replaceAll(RegExp(r'/+$'), '');
       final res = await _dio.get(
-        ApiConstants.productSearch,
+        '$cleanBase/products/search',
         queryParameters: {'q': query.trim(), 'limit': limit},
       );
       if (res.data != null && res.data['success'] == true) {
