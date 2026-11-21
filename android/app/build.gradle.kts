@@ -44,6 +44,8 @@ android {
                 storeFile = file("hotelworld-release.jks")
                 storePassword = "HotelWorld@2026#Key"
             }
+            enableV1Signing = true
+            enableV2Signing = true
         }
     }
 
