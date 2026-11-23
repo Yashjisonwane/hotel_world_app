@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../../constants/app_colors.dart';
 import '../../../models/quotation_item.dart';
 import '../../../models/product.dart';
 import '../../../services/api_service.dart';
+import '../../../services/paste_helper.dart';
 import '../../../providers/product_provider.dart';
 
 class InlineItemCard extends StatefulWidget {
@@ -18,6 +20,7 @@ class InlineItemCard extends StatefulWidget {
   final ValueChanged<QuotationItem> onChanged;
   final VoidCallback onDelete;
   final ValueChanged<String> onPhotoZoom;
+  final void Function(List<QuotationItem> items)? onMultiItemPaste;
 
   const InlineItemCard({
     super.key,
@@ -29,6 +32,7 @@ class InlineItemCard extends StatefulWidget {
     required this.onChanged,
     required this.onDelete,
     required this.onPhotoZoom,
+    this.onMultiItemPaste,
   });
 
   @override
@@ -164,7 +168,78 @@ class _InlineItemCardState extends State<InlineItemCard> {
     widget.onChanged(updated);
   }
 
+  void _applyMultiRowPaste(String text) {
+    final parsed = PasteHelper.parsePastedText(
+      text,
+      gstMode: widget.gstMode,
+      isMachinery: widget.isMachinery,
+      defaultSection: widget.item.section,
+    );
+    if (parsed.isEmpty) return;
+
+    final first = parsed[0];
+    setState(() {
+      _nameCtrl.text = first.name;
+      _qtyCtrl.text = _formatNumber(first.quantity);
+      _unit = first.unit;
+      if (first.price > 0) _priceCtrl.text = first.price.toStringAsFixed(2);
+      if (first.specification != null && first.specification!.isNotEmpty) {
+        _specCtrl.text = first.specification!;
+      }
+      if (first.size != null && first.size!.isNotEmpty) {
+        _sizeCtrl.text = first.size!;
+      }
+      _suggestions = [];
+      _aiSuggestions = [];
+      _showSuggestions = false;
+    });
+    _notifyChange();
+
+    if (parsed.length > 1) {
+      widget.onMultiItemPaste?.call(parsed.sublist(1));
+    }
+  }
+
+  Future<void> _handlePasteFromClipboard() async {
+    try {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      final text = data?.text;
+      if (text != null && text.trim().isNotEmpty) {
+        if (PasteHelper.isMultiRow(text)) {
+          _applyMultiRowPaste(text);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✓ Clipboard se samaan list jud gayi!'),
+                backgroundColor: Color(0xFF15803D),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        } else {
+          _nameCtrl.text = text.trim();
+          _notifyChange();
+          _onNameChanged(text.trim());
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Clipboard khali hai! Pehle WhatsApp ya Notes se copy karein.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (_) {}
+  }
+
   void _onNameChanged(String query) {
+    if (PasteHelper.isMultiRow(query)) {
+      _applyMultiRowPaste(query);
+      return;
+    }
+
     _notifyChange();
 
     _debounceTimer?.cancel();
@@ -547,15 +622,38 @@ class _InlineItemCardState extends State<InlineItemCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // PRODUCT NAME / PARTICULAR
-                Text(
-                  'PRODUCT NAME / PARTICULAR:',
-                  style: const TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF334155),
-                    letterSpacing: 0.3,
-                  ),
+                // PRODUCT NAME / PARTICULAR Header with 📋 Paste Shortcut
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'PRODUCT NAME / PARTICULAR:',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF334155),
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                    InkWell(
+                      onTap: _handlePasteFromClipboard,
+                      borderRadius: BorderRadius.circular(4),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.content_paste_rounded, size: 12, color: Color(0xFF2563EB)),
+                            SizedBox(width: 3),
+                            Text(
+                              'Paste List',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF2563EB)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 TextField(

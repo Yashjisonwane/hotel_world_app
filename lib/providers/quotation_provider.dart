@@ -70,7 +70,56 @@ class QuotationProvider extends ChangeNotifier {
 
   void addItem(QuotationItem item) {
     _items.add(item);
+    _reindexItems();
     notifyListeners();
+  }
+
+  void addItems(List<QuotationItem> newItems) {
+    for (var it in newItems) {
+      it.recalculate(overrideGstAdded: _gstMode == 'WITH_GST');
+      _items.add(it);
+    }
+    _reindexItems();
+    notifyListeners();
+  }
+
+  void insertItemsAfter(int index, List<QuotationItem> newItems) {
+    int insertAt = index + 1;
+    for (var it in newItems) {
+      it.recalculate(overrideGstAdded: _gstMode == 'WITH_GST');
+      if (insertAt <= _items.length) {
+        _items.insert(insertAt, it);
+        insertAt++;
+      } else {
+        _items.add(it);
+      }
+    }
+    _reindexItems();
+    notifyListeners();
+  }
+
+  void replaceItemsIfSingleBlank(List<QuotationItem> newItems) {
+    if (newItems.isEmpty) return;
+    if (_items.isEmpty || (_items.length == 1 && _items[0].name.trim().isEmpty)) {
+      _items.clear();
+      for (var it in newItems) {
+        it.recalculate(overrideGstAdded: _gstMode == 'WITH_GST');
+        _items.add(it);
+      }
+    } else {
+      for (var it in newItems) {
+        it.recalculate(overrideGstAdded: _gstMode == 'WITH_GST');
+        _items.add(it);
+      }
+    }
+    _reindexItems();
+    notifyListeners();
+  }
+
+  void _reindexItems() {
+    for (int i = 0; i < _items.length; i++) {
+      _items[i].serialNumber = i + 1;
+    }
   }
 
   // Active Quotation Getters

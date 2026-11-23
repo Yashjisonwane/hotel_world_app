@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
@@ -10,6 +11,7 @@ import '../../providers/quotation_provider.dart';
 import '../../providers/customer_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/pdf_invoice_service.dart';
+import '../../services/paste_helper.dart';
 import 'widgets/inline_item_card.dart';
 import 'quotation_preview_screen.dart';
 
@@ -304,7 +306,8 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
     _syncCharges();
 
     final qp = context.read<QuotationProvider>();
-    if (qp.items.isEmpty) {
+    final validItems = qp.items.where((it) => it.name.trim().isNotEmpty && it.name.trim() != '—').toList();
+    if (validItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Kripya kam se kam 1 item quotation me add karein.'), backgroundColor: AppColors.error),
       );
@@ -317,14 +320,15 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
       // UTF-8 BOM so Microsoft Excel & Google Sheets open cleanly with proper Indian formatting
       buffer.write('\uFEFF');
       buffer.writeln('HOTEL WORLD QUOTATION');
-      buffer.writeln('Quote No,"${quote.quotationNumber}",Date,"${DateFormat('dd/MM/yyyy').format(quote.date)}"');
+      final qNum = quote.quotationNumber.isNotEmpty ? quote.quotationNumber : 'HW-${DateTime.now().millisecondsSinceEpoch}';
+      buffer.writeln('Quote No,"$qNum",Date,"${DateFormat('dd/MM/yyyy').format(quote.date)}"');
       buffer.writeln('Customer Name,"${quote.customerName}",Phone,"${quote.customerPhone ?? ''}"');
       buffer.writeln('Address,"${quote.customerAddress ?? ''}",GSTIN,"${quote.customerGstin ?? ''}"');
       buffer.writeln('');
       buffer.writeln('S.N.,Item Name,Section,Specification,Size,Qty,Unit,Rate (Rs),Net Amt (Rs),GST %,Gross Amt (Rs)');
 
-      for (int i = 0; i < quote.items.length; i++) {
-        final it = quote.items[i];
+      for (int i = 0; i < validItems.length; i++) {
+        final it = validItems[i];
         final name = it.name.replaceAll('"', '""');
         final sec = (it.section ?? '').replaceAll('"', '""');
         final spec = (it.specification ?? '').replaceAll('"', '""');
@@ -342,22 +346,159 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
       buffer.writeln(',,,,,,,,,FINAL PAYABLE (Rs),${quote.finalAmount}');
 
       final tempDir = await getTemporaryDirectory();
-      final cleanNum = quote.quotationNumber.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+      final cleanNum = qNum.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
       final file = File('${tempDir.path}/Quotation_$cleanNum.csv');
       await file.writeAsString(buffer.toString());
 
+      RenderBox? box;
+      try {
+        box = context.findRenderObject() as RenderBox?;
+      } catch (_) {}
+      final origin = (box != null && box.hasSize && box.size.width > 0)
+          ? (box.localToGlobal(Offset.zero) & box.size)
+          : const Rect.fromLTWH(0, 0, 100, 100);
+
       await Share.shareXFiles(
         [XFile(file.path, mimeType: 'text/csv')],
-        text: 'Hotel World Quotation ${quote.quotationNumber} for ${quote.customerName}',
-        subject: 'Quotation ${quote.quotationNumber}',
+        text: 'Hotel World Quotation $qNum for ${quote.customerName}',
+        subject: 'Quotation $qNum',
+        sharePositionOrigin: origin,
       );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Excel export error: $e'), backgroundColor: AppColors.error),
+          SnackBar(content: Text('Excel export: $e'), backgroundColor: AppColors.error),
         );
       }
     }
+  }
+
+  Future<void> _handlePasteListFromClipboard() async {
+    final qp = context.read<QuotationProvider>();
+    final isMachinery = qp.quotationType == 'MACHINERY';
+
+    try {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      final text = data?.text;
+      if (text != null && text.trim().isNotEmpty) {
+        final parsed = PasteHelper.parsePastedText(
+          text,
+          gstMode: qp.gstMode,
+          isMachinery: isMachinery,
+        );
+
+        if (parsed.isNotEmpty) {
+          qp.replaceItemsIfSingleBlank(parsed);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('✓ ${parsed.length} samaan WhatsApp/Excel list se jud gaye!'),
+                backgroundColor: const Color(0xFF15803D),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+          return;
+        }
+      }
+    } catch (_) {}
+
+    // Fallback: If clipboard was empty or had only single item, open paste dialog
+    if (mounted) {
+      _showManualPasteDialog();
+    }
+  }
+
+  void _showManualPasteDialog() {
+    final textCtrl = TextEditingController();
+    final qp = context.read<QuotationProvider>();
+    final isMachinery = qp.quotationType == 'MACHINERY';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    '📋 Paste WhatsApp / Excel List',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'WhatsApp, Notes ya Excel se copy ki hui list yahan paste karein:',
+                style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: textCtrl,
+                maxLines: 6,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: '1. Kadchi 2 pcs\n2. Kadai 1 pcs 800\n3. Fry Pan 3 pcs',
+                  hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF94A3B8)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  contentPadding: const EdgeInsets.all(12),
+                ),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () {
+                  final text = textCtrl.text;
+                  if (text.trim().isNotEmpty) {
+                    final parsed = PasteHelper.parsePastedText(
+                      text,
+                      gstMode: qp.gstMode,
+                      isMachinery: isMachinery,
+                    );
+                    if (parsed.isNotEmpty) {
+                      qp.replaceItemsIfSingleBlank(parsed);
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('✓ ${parsed.length} samaan jud gaye!'),
+                          backgroundColor: const Color(0xFF15803D),
+                        ),
+                      );
+                      return;
+                    }
+                  }
+                  Navigator.pop(ctx);
+                },
+                icon: const Icon(Icons.check, color: Colors.white),
+                label: const Text('Add Items To Quotation', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF16A34A),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -891,9 +1032,36 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
                   onChanged: (updated) => qp.updateItem(idx, updated),
                   onDelete: () => qp.removeItem(idx),
                   onPhotoZoom: _showPhotoZoom,
+                  onMultiItemPaste: (newItems) => qp.insertItemsAfter(idx, newItems),
                 );
               },
             ),
+
+            // 📋 PASTE ITEMS LIST (WhatsApp / Excel / Notes)
+            InkWell(
+              onTap: _handlePasteListFromClipboard,
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF16A34A), width: 1.8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.content_paste_rounded, color: Color(0xFF15803D), size: 18),
+                    SizedBox(width: 8),
+                    Text(
+                      '📋 Paste Items List (WhatsApp / Excel)',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF15803D)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
 
             // CLEAR ACTION BUTTONS BELOW ITEMS (Normal vs Machinery)
             if (isMachinery) ...[

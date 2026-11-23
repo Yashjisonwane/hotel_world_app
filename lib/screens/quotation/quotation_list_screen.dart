@@ -20,6 +20,7 @@ class QuotationListScreen extends StatefulWidget {
 class _QuotationListScreenState extends State<QuotationListScreen> {
   final _searchCtrl = TextEditingController();
   Timer? _debounce;
+  Timer? _autoSyncTimer;
   final DateFormat _dateFormat = DateFormat('dd/MM/yyyy');
 
   @override
@@ -30,12 +31,20 @@ class _QuotationListScreenState extends State<QuotationListScreen> {
         context.read<QuotationProvider>().fetchQuotations(refresh: true);
       }
     });
+
+    // Auto-sync every 3.5 seconds so quotations created on Mobile Web or Desktop show up immediately for Admin
+    _autoSyncTimer = Timer.periodic(const Duration(milliseconds: 3500), (timer) {
+      if (mounted && _searchCtrl.text.trim().isEmpty) {
+        context.read<QuotationProvider>().fetchQuotations(refresh: false);
+      }
+    });
   }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
     _debounce?.cancel();
+    _autoSyncTimer?.cancel();
     super.dispose();
   }
 
