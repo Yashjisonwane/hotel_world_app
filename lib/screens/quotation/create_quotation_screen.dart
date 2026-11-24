@@ -923,13 +923,14 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
                     const SnackBar(content: Text('Item discounts hata diye gaye'), duration: Duration(seconds: 1)),
                   );
                 } else {
-                  for (int i = 0; i < qp.items.length; i++) {
-                    final it = qp.items[i];
-                    final curP = it.price > 0 ? it.price : 100.0;
-                    qp.updateItem(i, it.copyWith(
+                  final targetIdx = qp.items.indexWhere((it) => it.price > 0);
+                  final idx = targetIdx >= 0 ? targetIdx : 0;
+                  if (qp.items.isNotEmpty) {
+                    final curP = qp.items[idx].price > 0 ? qp.items[idx].price : 100.0;
+                    qp.updateItem(idx, qp.items[idx].copyWith(
                       mrp: curP,
-                      discountPercent: i == 0 ? 10.0 : (it.discountPercent ?? 0.0),
-                      price: i == 0 ? curP * 0.9 : curP,
+                      discountPercent: 10.0,
+                      price: curP * 0.9,
                     ));
                   }
                   ScaffoldMessenger.of(context).showSnackBar(

@@ -1,12 +1,14 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../constants/app_colors.dart';
 
 class AppUpdateService {
-  static const String currentVersion = '1.0.23';
-  static const int currentBuildNumber = 24;
+  static const String currentVersion = '1.0.24';
+  static const int currentBuildNumber = 25;
   static const String githubRepo = 'Yashjisonwane/hotel_world_app';
 
   /// Checks GitHub Releases for the latest version of Hotel World App
@@ -206,15 +208,164 @@ class AppUpdateService {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               ),
-              onPressed: () async {
+              onPressed: () {
                 Navigator.pop(ctx);
                 if (downloadUrl != null && downloadUrl.isNotEmpty) {
-                  final uri = Uri.parse(downloadUrl);
-                  if (await canLaunchUrl(uri)) {
-                    await launchUrl(uri, mode: LaunchMode.externalApplication);
-                  }
+                  _startInAppDownload(context, downloadUrl);
                 }
               },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Downloads the APK directly inside the app with a live progress dialog and opens the installer
+  static Future<void> _startInAppDownload(BuildContext context, String url) async {
+    final progressNotifier = ValueNotifier<double>(0.0);
+    bool isCancelled = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: const [
+              Icon(Icons.system_update_rounded, color: AppColors.primary500),
+              SizedBox(width: 10),
+              Text('Update Download Ho Raha Hai', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: ValueListenableBuilder<double>(
+            valueListenable: progressNotifier,
+            builder: (ctx, prog, _) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: LinearProgressIndicator(
+                      value: prog > 0 ? prog : null,
+                      backgroundColor: const Color(0xFFE2E8F0),
+                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF16A34A)),
+                      minHeight: 8,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        prog > 0 ? '${(prog * 100).toInt()}% Downloaded' : 'Connecting...',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+                      ),
+                      const Text(
+                        'Direct APK Update',
+                        style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                isCancelled = true;
+                Navigator.pop(dialogCtx);
+              },
+              child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
+            ),
+          ],
+        );
+      },
+    );
+
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final savePath = '${tempDir.path}/HotelWorld-Update.apk';
+
+      final oldFile = File(savePath);
+      if (await oldFile.exists()) {
+        await oldFile.delete();
+      }
+
+      final dio = Dio(
+        BaseOptions(
+          connectTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(minutes: 5),
+          followRedirects: true,
+          maxRedirects: 10,
+        ),
+      );
+
+      // Candidate 1: Render backend stream (immune to Indian ISP githubusercontent blocks)
+      // Candidate 2: Direct GitHub Release URL
+      final downloadCandidates = [
+        'https://hotelworld-backend.onrender.com/api/app/latest-apk',
+        url,
+      ];
+
+      bool downloaded = false;
+      String? lastError;
+
+      for (final candidate in downloadCandidates) {
+        if (isCancelled) break;
+        try {
+          await dio.download(
+            candidate,
+            savePath,
+            onReceiveProgress: (received, total) {
+              if (!isCancelled && total > 0) {
+                progressNotifier.value = received / total;
+              }
+            },
+          );
+          final downloadedFile = File(savePath);
+          if (await downloadedFile.exists() && (await downloadedFile.length()) > 1000000) {
+            downloaded = true;
+            break;
+          }
+        } catch (candidateErr) {
+          lastError = candidateErr.toString();
+        }
+      }
+
+      if (context.mounted && !isCancelled) {
+        Navigator.of(context, rootNavigator: true).pop(); // Close progress dialog
+        if (downloaded) {
+          final res = await OpenFilex.open(savePath, type: 'application/vnd.android.package-archive');
+          if (res.type != ResultType.done) {
+            final uri = Uri.parse(url);
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            }
+          }
+        } else {
+          throw Exception(lastError ?? 'APK download verify fail');
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Download error: $e. Browser se open kiya ja raha hai...'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      }
+    }
+  }
             ),
           ],
         );

@@ -81,12 +81,18 @@ class _InlineItemCardState extends State<InlineItemCard> {
     _sectionCtrl = TextEditingController(text: widget.item.section ?? '');
     _qtyCtrl = TextEditingController(text: _formatNumber(widget.item.quantity));
     _priceCtrl = TextEditingController(
-      text: widget.item.price > 0 ? widget.item.price.toStringAsFixed(2) : '',
+      text: widget.item.price > 0
+          ? (widget.item.price == widget.item.price.roundToDouble()
+              ? widget.item.price.toInt().toString()
+              : widget.item.price.toStringAsFixed(2))
+          : '',
     );
     _instCtrl = TextEditingController(
       text: widget.item.installationCharge > 0 ? widget.item.installationCharge.toStringAsFixed(0) : '',
     );
-    final itMrp = (widget.item.mrp != null && widget.item.mrp! > 0) ? widget.item.mrp! : widget.item.price;
+    final itMrp = (widget.item.mrp != null && widget.item.mrp! > 0)
+        ? widget.item.mrp!
+        : ((widget.item.discountPercent != null && widget.item.discountPercent! > 0) ? widget.item.price : 0.0);
     _mrpCtrl = TextEditingController(
       text: itMrp > 0 ? (itMrp == itMrp.roundToDouble() ? itMrp.toInt().toString() : itMrp.toStringAsFixed(2)) : '',
     );
@@ -144,18 +150,33 @@ class _InlineItemCardState extends State<InlineItemCard> {
       _imageUrl = widget.item.imageUrl;
     }
     if (oldWidget.item.mrp != widget.item.mrp) {
-      final itMrp = widget.item.mrp ?? widget.item.price;
-      _mrpCtrl.text = itMrp > 0 ? (itMrp == itMrp.roundToDouble() ? itMrp.toInt().toString() : itMrp.toStringAsFixed(2)) : '';
+      final currentParsedMrp = double.tryParse(_mrpCtrl.text.trim());
+      if (currentParsedMrp != widget.item.mrp) {
+        final itMrp = widget.item.mrp ?? widget.item.price;
+        _mrpCtrl.text = itMrp > 0
+            ? (itMrp == itMrp.roundToDouble() ? itMrp.toInt().toString() : itMrp.toStringAsFixed(2))
+            : '';
+      }
     }
     if (oldWidget.item.discountPercent != widget.item.discountPercent) {
-      _discCtrl.text = (widget.item.discountPercent != null && widget.item.discountPercent! > 0)
-          ? (widget.item.discountPercent! == widget.item.discountPercent!.roundToDouble()
-              ? widget.item.discountPercent!.toInt().toString()
-              : widget.item.discountPercent!.toString())
-          : '';
+      final currentParsedDisc = double.tryParse(_discCtrl.text.trim());
+      if (currentParsedDisc != widget.item.discountPercent) {
+        _discCtrl.text = (widget.item.discountPercent != null && widget.item.discountPercent! > 0)
+            ? (widget.item.discountPercent! == widget.item.discountPercent!.roundToDouble()
+                ? widget.item.discountPercent!.toInt().toString()
+                : widget.item.discountPercent!.toString())
+            : '';
+      }
     }
-    if (oldWidget.item.price != widget.item.price && _priceCtrl.text != widget.item.price.toStringAsFixed(2)) {
-      _priceCtrl.text = widget.item.price > 0 ? widget.item.price.toStringAsFixed(2) : '';
+    if (oldWidget.item.price != widget.item.price) {
+      final currentParsedPrice = double.tryParse(_priceCtrl.text.trim());
+      if (currentParsedPrice != widget.item.price) {
+        _priceCtrl.text = widget.item.price > 0
+            ? (widget.item.price == widget.item.price.roundToDouble()
+                ? widget.item.price.toInt().toString()
+                : widget.item.price.toStringAsFixed(2))
+            : '';
+      }
     }
   }
 
@@ -1189,8 +1210,8 @@ class _InlineItemCardState extends State<InlineItemCard> {
 
                 const SizedBox(height: 8),
 
-                // 3-COLUMN ROW: QTY | UNIT | RATE (OR MRP | LESS % | NET RATE when discount active)
-                if (widget.hasDiscountColumns || (widget.item.discountPercent != null && widget.item.discountPercent! > 0) || (widget.item.mrp != null && widget.item.mrp! > 0)) ...[
+                // 3-COLUMN ROW: QTY | UNIT | RATE (OR MRP | LESS % | NET RATE when discount active on this item)
+                if ((widget.item.discountPercent != null && widget.item.discountPercent! > 0) || (widget.item.mrp != null && widget.item.mrp! > 0 && widget.item.mrp != widget.item.price)) ...[
                   Row(
                     children: [
                       // MRP
