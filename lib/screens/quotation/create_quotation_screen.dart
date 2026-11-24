@@ -892,6 +892,7 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
               itemCount: qp.items.length,
               itemBuilder: (ctx, idx) {
                 final it = qp.items[idx];
+                final hasAnyDisc = qp.items.any((x) => (x.discountPercent != null && x.discountPercent! > 0) || (x.mrp != null && x.mrp! > 0));
                 return InlineItemCard(
                   key: ValueKey(it.id ?? 'row_$idx'),
                   item: it,
@@ -899,6 +900,7 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
                   isMachinery: isMachinery,
                   isPhotoMode: isPhotoMode,
                   gstMode: qp.gstMode,
+                  hasDiscountColumns: hasAnyDisc,
                   onChanged: (updated) => qp.updateItem(idx, updated),
                   onDelete: () => qp.removeItem(idx),
                   onPhotoZoom: _showPhotoZoom,
@@ -910,27 +912,24 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
             // 🏷️ Item Discount Toggle (MRP & Less % Columns) - Matches Web Behavior
             InkWell(
               onTap: () {
-                final hasAnyDisc = qp.items.any((it) => (it.discountPercent != null && it.discountPercent! > 0));
+                final hasAnyDisc = qp.items.any((it) => (it.discountPercent != null && it.discountPercent! > 0) || (it.mrp != null && it.mrp! > 0));
                 if (hasAnyDisc) {
                   for (int i = 0; i < qp.items.length; i++) {
                     final it = qp.items[i];
-                    if ((it.discountPercent ?? 0) > 0 || it.mrp != null) {
-                      final revertRate = (it.mrp != null && it.mrp! > 0) ? it.mrp! : it.price;
-                      qp.updateItem(i, it.copyWith(discountPercent: 0, mrp: null, price: revertRate));
-                    }
+                    final revertRate = (it.mrp != null && it.mrp! > 0) ? it.mrp! : it.price;
+                    qp.updateItem(i, it.copyWith(discountPercent: 0, mrp: null, price: revertRate));
                   }
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Item discounts hata diye gaye'), duration: Duration(seconds: 1)),
                   );
                 } else {
-                  final targetIdx = qp.items.indexWhere((it) => it.price > 0);
-                  final idx = targetIdx >= 0 ? targetIdx : 0;
-                  if (qp.items.isNotEmpty) {
-                    final curP = qp.items[idx].price > 0 ? qp.items[idx].price : 100.0;
-                    qp.updateItem(idx, qp.items[idx].copyWith(
+                  for (int i = 0; i < qp.items.length; i++) {
+                    final it = qp.items[i];
+                    final curP = it.price > 0 ? it.price : 100.0;
+                    qp.updateItem(i, it.copyWith(
                       mrp: curP,
-                      discountPercent: 10.0,
-                      price: curP * 0.9,
+                      discountPercent: i == 0 ? 10.0 : (it.discountPercent ?? 0.0),
+                      price: i == 0 ? curP * 0.9 : curP,
                     ));
                   }
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -941,7 +940,7 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
               borderRadius: BorderRadius.circular(10),
               child: Builder(
                 builder: (context) {
-                  final hasAnyDisc = qp.items.any((it) => (it.discountPercent != null && it.discountPercent! > 0));
+                  final hasAnyDisc = qp.items.any((it) => (it.discountPercent != null && it.discountPercent! > 0) || (it.mrp != null && it.mrp! > 0));
                   return Container(
                     padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 12),
                     margin: const EdgeInsets.only(bottom: 8),

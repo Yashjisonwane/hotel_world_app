@@ -21,6 +21,7 @@ class InlineItemCard extends StatefulWidget {
   final VoidCallback onDelete;
   final ValueChanged<String> onPhotoZoom;
   final void Function(List<QuotationItem> items)? onMultiItemPaste;
+  final bool hasDiscountColumns;
 
   const InlineItemCard({
     super.key,
@@ -33,6 +34,7 @@ class InlineItemCard extends StatefulWidget {
     required this.onDelete,
     required this.onPhotoZoom,
     this.onMultiItemPaste,
+    this.hasDiscountColumns = false,
   });
 
   @override
@@ -49,6 +51,12 @@ class _InlineItemCardState extends State<InlineItemCard> {
   late TextEditingController _instCtrl;
   late TextEditingController _mrpCtrl;
   late TextEditingController _discCtrl;
+
+  bool _isEditingMargin = false;
+  final TextEditingController _customMarginCtrl = TextEditingController();
+
+  bool _isEditingDisc = false;
+  final TextEditingController _customDiscCtrl = TextEditingController();
 
   late String _unit;
   late double _gstRate;
@@ -164,6 +172,8 @@ class _InlineItemCardState extends State<InlineItemCard> {
     _instCtrl.dispose();
     _mrpCtrl.dispose();
     _discCtrl.dispose();
+    _customMarginCtrl.dispose();
+    _customDiscCtrl.dispose();
     super.dispose();
   }
 
@@ -421,6 +431,35 @@ class _InlineItemCardState extends State<InlineItemCard> {
     setState(() {
       _priceCtrl.text = rounded.toStringAsFixed(2);
     });
+    _notifyChange();
+  }
+
+  void _applyDiscountPercent(double d) {
+    final currentP = double.tryParse(_priceCtrl.text) ?? widget.item.price;
+    if (currentP <= 0) return;
+    final baseMrp = (widget.item.mrp != null && widget.item.mrp! > 0) ? widget.item.mrp! : currentP;
+    final newNet = double.parse((baseMrp * (1 - d / 100.0)).toStringAsFixed(2));
+    _mrpCtrl.text = baseMrp.toStringAsFixed(2);
+    _discCtrl.text = (d == d.roundToDouble()) ? d.toInt().toString() : d.toString();
+    _priceCtrl.text = newNet.toStringAsFixed(2);
+    widget.onChanged(widget.item.copyWith(
+      mrp: baseMrp,
+      discountPercent: d,
+      price: newNet,
+    ));
+    _notifyChange();
+  }
+
+  void _removeDiscount() {
+    final baseRate = (widget.item.mrp != null && widget.item.mrp! > 0) ? widget.item.mrp! : widget.item.price;
+    _discCtrl.text = '';
+    _mrpCtrl.text = '';
+    _priceCtrl.text = baseRate.toStringAsFixed(2);
+    widget.onChanged(widget.item.copyWith(
+      discountPercent: 0,
+      mrp: null,
+      price: baseRate,
+    ));
     _notifyChange();
   }
 
@@ -1150,8 +1189,8 @@ class _InlineItemCardState extends State<InlineItemCard> {
 
                 const SizedBox(height: 8),
 
-                // 3-COLUMN ROW: QTY | UNIT | RATE (OR MRP | LESS % | NET RATE when discount > 0)
-                if (widget.item.discountPercent != null && widget.item.discountPercent! > 0) ...[
+                // 3-COLUMN ROW: QTY | UNIT | RATE (OR MRP | LESS % | NET RATE when discount active)
+                if (widget.hasDiscountColumns || (widget.item.discountPercent != null && widget.item.discountPercent! > 0) || (widget.item.mrp != null && widget.item.mrp! > 0)) ...[
                   Row(
                     children: [
                       // MRP
@@ -1527,133 +1566,294 @@ class _InlineItemCardState extends State<InlineItemCard> {
 
                 const SizedBox(height: 8),
 
-                // SECRET COMMISSION & MARGIN PILLS
+                // SECRET COMMISSION & MARGIN / DISCOUNT CONTROLS (Exact Web Mirror)
                 Container(
                   margin: const EdgeInsets.only(top: 2, bottom: 6),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFEFCE8),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: const Color(0xFFFEF08A)),
                   ),
-                  child: Wrap(
-                    spacing: 5,
-                    runSpacing: 4,
-                    crossAxisAlignment: WrapCrossAlignment.center,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (widget.item.purchasePrice != null && widget.item.purchasePrice! > 0)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFEF3C7),
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: const Color(0xFFF59E0B)),
-                          ),
-                          child: Text(
-                            'Buy: ₹${widget.item.purchasePrice!.toStringAsFixed(0)}',
-                            style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFFB45309)),
-                          ),
-                        ),
-                      for (final pct in [5.0, 10.0, 12.5, 15.0, 20.0])
-                        InkWell(
-                          onTap: () => _applyMarginPercent(pct),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2563EB),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              '+${pct % 1 == 0 ? pct.toInt().toString() : pct.toString()}%',
-                              style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w900, color: Colors.white),
-                            ),
-                          ),
-                        ),
-                      InkWell(
-                        onTap: _roundPriceToNearest,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF59E0B),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text(
-                            '≈₹',
-                            style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w900, color: Colors.white),
-                          ),
-                        ),
-                      ),
-                      // Item Discount Quick Pills (Matches Web)
-                      const SizedBox(width: 4),
-                      const Text(
-                        'Disc:',
-                        style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFFDC2626)),
-                      ),
-                      for (final d in [5.0, 10.0, 15.0, 20.0])
-                        InkWell(
-                          onTap: () {
-                            final currentP = double.tryParse(_priceCtrl.text) ?? widget.item.price;
-                            if (currentP <= 0) return;
-                            final baseMrp = (widget.item.mrp != null && widget.item.mrp! > 0) ? widget.item.mrp! : currentP;
-                            final newNet = baseMrp * (1 - d / 100);
-                            _mrpCtrl.text = baseMrp.toStringAsFixed(2);
-                            _discCtrl.text = d.toInt().toString();
-                            _priceCtrl.text = newNet.toStringAsFixed(2);
-                            widget.onChanged(widget.item.copyWith(
-                              mrp: baseMrp,
-                              discountPercent: d,
-                              price: newNet,
-                            ));
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: (widget.item.discountPercent == d) ? const Color(0xFFDC2626) : const Color(0xFFFEF2F2),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: const Color(0xFFFCA5A5)),
-                            ),
-                            child: Text(
-                              '-${d.toInt()}%',
-                              style: TextStyle(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w900,
-                                color: (widget.item.discountPercent == d) ? Colors.white : const Color(0xFFDC2626),
+                      // 1. MARGIN / MARKUP ROW
+                      Wrap(
+                        spacing: 5,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          if (widget.item.purchasePrice != null && widget.item.purchasePrice! > 0)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF3C7),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: const Color(0xFFF59E0B)),
+                              ),
+                              child: Text(
+                                'Buy: ₹${widget.item.purchasePrice!.toStringAsFixed(0)}',
+                                style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFFB45309)),
                               ),
                             ),
-                          ),
-                        ),
-                      if ((widget.item.discountPercent ?? 0) > 0)
-                        InkWell(
-                          onTap: () {
-                            final baseRate = widget.item.mrp ?? widget.item.price;
-                            _discCtrl.text = '';
-                            _priceCtrl.text = baseRate.toStringAsFixed(2);
-                            widget.onChanged(widget.item.copyWith(
-                              discountPercent: 0,
-                              mrp: null,
-                              price: baseRate,
-                            ));
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFEE2E2),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(color: const Color(0xFFEF4444)),
+                          if (_isEditingMargin)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: const Color(0xFF3B82F6), width: 1.5),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text('+', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1D4ED8))),
+                                  const SizedBox(width: 2),
+                                  SizedBox(
+                                    width: 42,
+                                    height: 22,
+                                    child: TextField(
+                                      controller: _customMarginCtrl,
+                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                      textAlign: TextAlign.center,
+                                      autofocus: true,
+                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1D4ED8)),
+                                      decoration: const InputDecoration(
+                                        hintText: '18',
+                                        isDense: true,
+                                        contentPadding: EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+                                        border: InputBorder.none,
+                                      ),
+                                    ),
+                                  ),
+                                  const Text('%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1D4ED8))),
+                                  const SizedBox(width: 4),
+                                  InkWell(
+                                    onTap: () {
+                                      final val = double.tryParse(_customMarginCtrl.text.trim());
+                                      if (val != null) _applyMarginPercent(val);
+                                      setState(() => _isEditingMargin = false);
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(3),
+                                      decoration: BoxDecoration(color: const Color(0xFF2563EB), borderRadius: BorderRadius.circular(3)),
+                                      child: const Icon(Icons.check, size: 12, color: Colors.white),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 3),
+                                  InkWell(
+                                    onTap: () => setState(() => _isEditingMargin = false),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(3),
+                                      decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(3)),
+                                      child: const Icon(Icons.close, size: 12, color: Color(0xFF64748B)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else ...[
+                            for (final pct in [5.0, 10.0, 12.5, 15.0, 20.0])
+                              InkWell(
+                                onTap: () => _applyMarginPercent(pct),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF2563EB),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '+${pct % 1 == 0 ? pct.toInt().toString() : pct.toString()}%',
+                                    style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w900, color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                            InkWell(
+                              onTap: () {
+                                _customMarginCtrl.text = '';
+                                setState(() {
+                                  _isEditingMargin = true;
+                                  _isEditingDisc = false;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEFF6FF),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: const Color(0xFF93C5FD)),
+                                ),
+                                child: const Text(
+                                  '+%',
+                                  style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w900, color: Color(0xFF1D4ED8)),
+                                ),
+                              ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'MRP ₹${(widget.item.mrp ?? widget.item.price).toStringAsFixed(0)} Less ${(widget.item.discountPercent ?? 0).toStringAsFixed(0)}%',
+                            InkWell(
+                              onTap: _roundPriceToNearest,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF59E0B),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  '≈₹',
+                                  style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w900, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      // 2. DISCOUNT ROW (Matching Web ItemCostMarginWidget)
+                      Wrap(
+                        spacing: 5,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          const Text(
+                            'Disc:',
+                            style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFFDC2626)),
+                          ),
+                          if (_isEditingDisc)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF2F2),
+                                borderRadius: BorderRadius.circular(4),
+                                border: Border.all(color: const Color(0xFFEF4444), width: 1.5),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text('−', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFDC2626))),
+                                  const SizedBox(width: 2),
+                                  SizedBox(
+                                    width: 42,
+                                    height: 22,
+                                    child: TextField(
+                                      controller: _customDiscCtrl,
+                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                      textAlign: TextAlign.center,
+                                      autofocus: true,
+                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFDC2626)),
+                                      decoration: const InputDecoration(
+                                        hintText: '48',
+                                        isDense: true,
+                                        contentPadding: EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+                                        border: InputBorder.none,
+                                      ),
+                                    ),
+                                  ),
+                                  const Text('%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFDC2626))),
+                                  const SizedBox(width: 4),
+                                  InkWell(
+                                    onTap: () {
+                                      final val = double.tryParse(_customDiscCtrl.text.trim());
+                                      if (val != null && val > 0) {
+                                        _applyDiscountPercent(val);
+                                      } else if (val == 0) {
+                                        _removeDiscount();
+                                      }
+                                      setState(() => _isEditingDisc = false);
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(3),
+                                      decoration: BoxDecoration(color: const Color(0xFFDC2626), borderRadius: BorderRadius.circular(3)),
+                                      child: const Icon(Icons.check, size: 12, color: Colors.white),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 3),
+                                  InkWell(
+                                    onTap: () => setState(() => _isEditingDisc = false),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(3),
+                                      decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(3)),
+                                      child: const Icon(Icons.close, size: 12, color: Color(0xFF64748B)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else ...[
+                            for (final d in [5.0, 10.0, 15.0, 20.0])
+                              InkWell(
+                                onTap: () => _applyDiscountPercent(d),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: (widget.item.discountPercent == d) ? const Color(0xFFDC2626) : const Color(0xFFFEF2F2),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(color: const Color(0xFFFCA5A5)),
+                                  ),
+                                  child: Text(
+                                    '-${d.toInt()}%',
+                                    style: TextStyle(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w900,
+                                      color: (widget.item.discountPercent == d) ? Colors.white : const Color(0xFFDC2626),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            InkWell(
+                              onTap: () {
+                                _customDiscCtrl.text = (widget.item.discountPercent != null && widget.item.discountPercent! > 0)
+                                    ? ((widget.item.discountPercent == widget.item.discountPercent!.roundToDouble())
+                                        ? widget.item.discountPercent!.toInt().toString()
+                                        : widget.item.discountPercent!.toString())
+                                    : '';
+                                setState(() {
+                                  _isEditingDisc = true;
+                                  _isEditingMargin = false;
+                                });
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEE2E2),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: const Color(0xFFF87171)),
+                                ),
+                                child: Text(
+                                  (widget.item.discountPercent != null && ![5.0, 10.0, 15.0, 20.0].contains(widget.item.discountPercent))
+                                      ? '-${widget.item.discountPercent! % 1 == 0 ? widget.item.discountPercent!.toInt() : widget.item.discountPercent}%'
+                                      : '-%',
                                   style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w900, color: Color(0xFFB91C1C)),
                                 ),
-                                const SizedBox(width: 3),
-                                const Icon(Icons.close, size: 10, color: Color(0xFFB91C1C)),
-                              ],
+                              ),
                             ),
-                          ),
-                        ),
+                            if ((widget.item.discountPercent ?? 0) > 0)
+                              InkWell(
+                                onTap: _removeDiscount,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFEE2E2),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(color: const Color(0xFFEF4444)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'MRP ₹${(widget.item.mrp ?? widget.item.price).toStringAsFixed(0)} Less ${(widget.item.discountPercent ?? 0).toStringAsFixed(0)}%',
+                                        style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w900, color: Color(0xFFB91C1C)),
+                                      ),
+                                      const SizedBox(width: 3),
+                                      const Icon(Icons.close, size: 10, color: Color(0xFFB91C1C)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ],
+                      ),
                     ],
                   ),
                 ),
