@@ -23,6 +23,16 @@ class PdfInvoiceService {
     return formatter.format(val);
   }
 
+  static String formatPrice(double val) {
+    if (val % 1 == 0) {
+      final formatter = NumberFormat('#,##,##0', 'en_IN');
+      return formatter.format(val);
+    } else {
+      final formatter = NumberFormat('#,##,##0.00', 'en_IN');
+      return formatter.format(val);
+    }
+  }
+
   static String _cleanItemName(String name) {
     return name.replaceAll(RegExp(r'\s*\(\s*inc[\s.]*gst\s*\)', caseSensitive: false), '')
                .replaceAll(RegExp(r'\s*inc[\s.]*gst\b', caseSensitive: false), '')
@@ -457,7 +467,7 @@ class PdfInvoiceService {
                                 mainAxisAlignment: pw.MainAxisAlignment.center,
                                 children: [
                                   pw.Text(
-                                    formatInteger(it.price),
+                                    formatPrice(it.price),
                                     style: const pw.TextStyle(fontSize: 8),
                                   ),
                                   if (it.isGstInclusive || RegExp(r'\b(inc[\s.]*gst|inclusive)\b', caseSensitive: false).hasMatch('${it.name} ${it.gstText ?? ''}')) ...[
@@ -536,7 +546,7 @@ class PdfInvoiceService {
                           pw.Text('TOTAL NET AMT: ', style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold)),
                           pw.Text('$currSymbol${formatAmount(quotation.totalNet)}', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold)),
                           pw.SizedBox(width: 14),
-                          pw.Text('GST: ', style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
+                          pw.Text('GST (${quotation.items.any((it) => it.isGstAdded && it.gstRate > 0) ? quotation.items.firstWhere((it) => it.isGstAdded && it.gstRate > 0).gstRate.toStringAsFixed(0) : '18'}%): ', style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700)),
                           pw.Text('+ $currSymbol${formatAmount(quotation.totalGst)}', style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#047857'))),
                         ],
                       ),
