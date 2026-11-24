@@ -366,11 +366,5 @@ class AppUpdateService {
       }
     }
   }
-            ),
-          ],
-        );
-      },
-    );
-  }
 }
 
