@@ -81,8 +81,8 @@ jobs:
 
   publish-release:
     name: 🚀 Publish GitHub Release
-    needs: [build-android, build-ios]
-    if: always() && needs.build-android.result == 'success'
+    needs: [build-android]
+    if: needs.build-android.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
