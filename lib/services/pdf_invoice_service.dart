@@ -97,6 +97,7 @@ class PdfInvoiceService {
     final hasGst = quotation.totalGst > 0 || quotation.items.any((it) => it.isGstAdded && it.gstRate > 0);
     final docTitle = quotation.documentTitle.isNotEmpty ? quotation.documentTitle.toUpperCase() : 'QUOTATION';
     final isMachinery = quotation.quotationType == 'MACHINERY';
+    final hasItemDiscounts = quotation.items.any((it) => (it.discountPercent != null && it.discountPercent! > 0));
 
     // 3. Build MultiPage Document matching Indore Hotel World Official Reference Layout
     pdf.addPage(
@@ -238,31 +239,31 @@ class PdfInvoiceService {
                               crossAxisAlignment: pw.CrossAxisAlignment.stretch,
                               children: [
                                 pw.Container(
-                                  padding: const pw.EdgeInsets.symmetric(vertical: 3),
+                                  padding: const pw.EdgeInsets.symmetric(vertical: 4),
                                   decoration: const pw.BoxDecoration(
                                     border: pw.Border(bottom: pw.BorderSide(color: PdfColors.black, width: 1.5)),
                                   ),
                                   child: pw.Center(
                                     child: pw.Text(
                                       'PURCHASER',
-                                      style: pw.TextStyle(fontSize: 9.5, fontWeight: pw.FontWeight.bold, letterSpacing: 1),
+                                      style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, letterSpacing: 1),
                                     ),
                                   ),
                                 ),
                                 pw.Padding(
-                                  padding: const pw.EdgeInsets.fromLTRB(10, 6, 10, 8),
+                                  padding: const pw.EdgeInsets.fromLTRB(10, 8, 10, 10),
                                   child: pw.Column(
                                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                                     children: [
-                                      pw.Text('NAME : ${quotation.customerName.toUpperCase()}', style: pw.TextStyle(fontSize: 8.5, fontWeight: pw.FontWeight.bold)),
-                                      pw.SizedBox(height: 2),
-                                      pw.Text('ADDRESS : ${quotation.customerAddress != null && quotation.customerAddress!.isNotEmpty ? quotation.customerAddress! : "—"}', style: const pw.TextStyle(fontSize: 8)),
-                                      pw.SizedBox(height: 2),
-                                      pw.Text('PHONE NO. : ${quotation.customerPhone != null && quotation.customerPhone!.isNotEmpty ? quotation.customerPhone! : "—"}', style: const pw.TextStyle(fontSize: 8)),
-                                      pw.SizedBox(height: 2),
-                                      pw.Text('E-MAIL : ${quotation.customerEmail != null && quotation.customerEmail!.isNotEmpty ? quotation.customerEmail! : "—"}', style: const pw.TextStyle(fontSize: 8)),
-                                      pw.SizedBox(height: 2),
-                                      pw.Text('GSTIN : ${quotation.customerGstin != null && quotation.customerGstin!.isNotEmpty ? quotation.customerGstin! : "—"}', style: const pw.TextStyle(fontSize: 8)),
+                                      pw.Text('NAME : ${quotation.customerName.toUpperCase()}', style: pw.TextStyle(fontSize: 12.5, fontWeight: pw.FontWeight.bold)),
+                                      pw.SizedBox(height: 3),
+                                      pw.Text('ADDRESS : ${quotation.customerAddress != null && quotation.customerAddress!.isNotEmpty ? quotation.customerAddress! : "—"}', style: pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold)),
+                                      pw.SizedBox(height: 3),
+                                      pw.Text('PHONE NO. : ${quotation.customerPhone != null && quotation.customerPhone!.isNotEmpty ? quotation.customerPhone! : "—"}', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                                      pw.SizedBox(height: 3),
+                                      pw.Text('E-MAIL : ${quotation.customerEmail != null && quotation.customerEmail!.isNotEmpty ? quotation.customerEmail! : "—"}', style: const pw.TextStyle(fontSize: 10)),
+                                      pw.SizedBox(height: 3),
+                                      pw.Text('GSTIN : ${quotation.customerGstin != null && quotation.customerGstin!.isNotEmpty ? quotation.customerGstin! : "—"}', style: pw.TextStyle(fontSize: 10.5, fontWeight: pw.FontWeight.bold)),
                                     ],
                                   ),
                                 ),
@@ -347,30 +348,59 @@ class PdfInvoiceService {
                 horizontalInside: pw.BorderSide(color: PdfColors.black, width: 1),
                 verticalInside: pw.BorderSide(color: PdfColors.black, width: 1),
               ),
-                    columnWidths: isPhotoMode
-                        ? {
-                            0: const pw.FixedColumnWidth(26), // S.N.
-                            1: const pw.FixedColumnWidth(46), // PHOTO
-                            2: const pw.FlexColumnWidth(3),   // PARTICULAR
-                            3: const pw.FixedColumnWidth(48), // QTY
-                            4: const pw.FixedColumnWidth(48), // PRICE
-                            if (hasGst) ...{
-                              5: const pw.FixedColumnWidth(66), // NET. AMT
-                              6: const pw.FixedColumnWidth(40), // GST%
-                            },
-                            if (hasGst) 7: const pw.FixedColumnWidth(68) else 5: const pw.FixedColumnWidth(68), // GROSS AMT.
-                          }
-                        : {
-                            0: const pw.FixedColumnWidth(28), // S.N.
-                            1: const pw.FlexColumnWidth(3.5), // PARTICULAR
-                            2: const pw.FixedColumnWidth(52), // QTY
-                            3: const pw.FixedColumnWidth(52), // PRICE
-                            if (hasGst) ...{
-                              4: const pw.FixedColumnWidth(68), // NET. AMT
-                              5: const pw.FixedColumnWidth(42), // GST%
-                            },
-                            if (hasGst) 6: const pw.FixedColumnWidth(70) else 4: const pw.FixedColumnWidth(70), // GROSS AMT.
-                          },
+                    columnWidths: hasItemDiscounts
+                        ? (isPhotoMode
+                            ? {
+                                0: const pw.FixedColumnWidth(24), // S.N.
+                                1: const pw.FixedColumnWidth(42), // PHOTO
+                                2: const pw.FlexColumnWidth(3),   // PARTICULAR
+                                3: const pw.FixedColumnWidth(44), // MRP
+                                4: const pw.FixedColumnWidth(38), // LESS %
+                                5: const pw.FixedColumnWidth(46), // NET RATE
+                                6: const pw.FixedColumnWidth(44), // QTY
+                                if (hasGst) ...{
+                                  7: const pw.FixedColumnWidth(58), // NET. AMT
+                                  8: const pw.FixedColumnWidth(38), // GST%
+                                },
+                                if (hasGst) 9: const pw.FixedColumnWidth(64) else 7: const pw.FixedColumnWidth(64), // GROSS AMT.
+                              }
+                            : {
+                                0: const pw.FixedColumnWidth(26), // S.N.
+                                1: const pw.FlexColumnWidth(3.2), // PARTICULAR
+                                2: const pw.FixedColumnWidth(46), // MRP
+                                3: const pw.FixedColumnWidth(40), // LESS %
+                                4: const pw.FixedColumnWidth(48), // NET RATE
+                                5: const pw.FixedColumnWidth(48), // QTY
+                                if (hasGst) ...{
+                                  6: const pw.FixedColumnWidth(62), // NET. AMT
+                                  7: const pw.FixedColumnWidth(38), // GST%
+                                },
+                                if (hasGst) 8: const pw.FixedColumnWidth(66) else 6: const pw.FixedColumnWidth(66), // GROSS AMT.
+                              })
+                        : (isPhotoMode
+                            ? {
+                                0: const pw.FixedColumnWidth(26), // S.N.
+                                1: const pw.FixedColumnWidth(46), // PHOTO
+                                2: const pw.FlexColumnWidth(3),   // PARTICULAR
+                                3: const pw.FixedColumnWidth(48), // QTY
+                                4: const pw.FixedColumnWidth(48), // PRICE
+                                if (hasGst) ...{
+                                  5: const pw.FixedColumnWidth(66), // NET. AMT
+                                  6: const pw.FixedColumnWidth(40), // GST%
+                                },
+                                if (hasGst) 7: const pw.FixedColumnWidth(68) else 5: const pw.FixedColumnWidth(68), // GROSS AMT.
+                              }
+                            : {
+                                0: const pw.FixedColumnWidth(28), // S.N.
+                                1: const pw.FlexColumnWidth(3.5), // PARTICULAR
+                                2: const pw.FixedColumnWidth(52), // QTY
+                                3: const pw.FixedColumnWidth(52), // PRICE
+                                if (hasGst) ...{
+                                  4: const pw.FixedColumnWidth(68), // NET. AMT
+                                  5: const pw.FixedColumnWidth(42), // GST%
+                                },
+                                if (hasGst) 6: const pw.FixedColumnWidth(70) else 4: const pw.FixedColumnWidth(70), // GROSS AMT.
+                              }),
                     children: [
                       // Table Headers
                       pw.TableRow(
@@ -379,8 +409,15 @@ class PdfInvoiceService {
                           _buildTh('S.N.', align: pw.TextAlign.center),
                           if (isPhotoMode) _buildTh('PHOTO', align: pw.TextAlign.center),
                           _buildTh('PARTICULAR', align: pw.TextAlign.left),
-                          _buildTh('QTY', align: pw.TextAlign.center),
-                          _buildTh('PRICE', align: pw.TextAlign.center),
+                          if (hasItemDiscounts) ...[
+                            _buildTh('MRP', align: pw.TextAlign.center),
+                            _buildTh('LESS %', align: pw.TextAlign.center),
+                            _buildTh('NET RATE', align: pw.TextAlign.center),
+                            _buildTh('QTY', align: pw.TextAlign.center),
+                          ] else ...[
+                            _buildTh('QTY', align: pw.TextAlign.center),
+                            _buildTh('PRICE', align: pw.TextAlign.center),
+                          ],
                           if (hasGst) ...[
                             _buildTh('NET. AMT', align: pw.TextAlign.right),
                             _buildTh('GST%', align: pw.TextAlign.center),
@@ -448,38 +485,86 @@ class PdfInvoiceService {
                               ),
                             ),
 
-                            // QTY
-                            pw.Container(
-                              padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-                              alignment: pw.Alignment.center,
-                              child: pw.Text(
-                                '${it.quantity == it.quantity.roundToDouble() ? it.quantity.toInt() : it.quantity} ${it.unit}',
-                                style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+                            // Columns: MRP, LESS %, NET RATE, QTY or standard QTY, PRICE
+                            if (hasItemDiscounts) ...[
+                              // MRP
+                              pw.Container(
+                                padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                                alignment: pw.Alignment.center,
+                                child: pw.Text(
+                                  formatPrice(it.mrp != null && it.mrp! > 0 ? it.mrp! : it.price),
+                                  style: const pw.TextStyle(fontSize: 8),
+                                ),
                               ),
-                            ),
-
-                            // PRICE
-                            pw.Container(
-                              padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-                              alignment: pw.Alignment.center,
-                              child: pw.Row(
-                                mainAxisSize: pw.MainAxisSize.min,
-                                mainAxisAlignment: pw.MainAxisAlignment.center,
-                                children: [
-                                  pw.Text(
-                                    formatPrice(it.price),
-                                    style: const pw.TextStyle(fontSize: 8),
+                              // LESS %
+                              pw.Container(
+                                padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                                alignment: pw.Alignment.center,
+                                child: pw.Text(
+                                  (it.discountPercent != null && it.discountPercent! > 0)
+                                      ? '${it.discountPercent! == it.discountPercent!.roundToDouble() ? it.discountPercent!.toInt() : it.discountPercent}%'
+                                      : '—',
+                                  style: pw.TextStyle(
+                                    fontSize: 8,
+                                    fontWeight: pw.FontWeight.bold,
+                                    color: (it.discountPercent != null && it.discountPercent! > 0)
+                                        ? PdfColor.fromHex('#DC2626')
+                                        : PdfColors.black,
                                   ),
-                                  if (it.isGstInclusive || RegExp(r'\b(inc[\s.]*gst|inclusive)\b', caseSensitive: false).hasMatch('${it.name} ${it.gstText ?? ''}')) ...[
-                                    pw.SizedBox(width: 2),
-                                    pw.Text(
-                                      '(Inc. GST)',
-                                      style: pw.TextStyle(fontSize: 6, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#15803D')),
-                                    ),
-                                  ],
-                                ],
+                                ),
                               ),
-                            ),
+                              // NET RATE
+                              pw.Container(
+                                padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                                alignment: pw.Alignment.center,
+                                child: pw.Text(
+                                  formatPrice(it.price),
+                                  style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+                                ),
+                              ),
+                              // QTY
+                              pw.Container(
+                                padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                                alignment: pw.Alignment.center,
+                                child: pw.Text(
+                                  '${it.quantity == it.quantity.roundToDouble() ? it.quantity.toInt() : it.quantity} ${it.unit}',
+                                  style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+                                ),
+                              ),
+                            ] else ...[
+                              // QTY
+                              pw.Container(
+                                padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                                alignment: pw.Alignment.center,
+                                child: pw.Text(
+                                  '${it.quantity == it.quantity.roundToDouble() ? it.quantity.toInt() : it.quantity} ${it.unit}',
+                                  style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+                                ),
+                              ),
+
+                              // PRICE
+                              pw.Container(
+                                padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                                alignment: pw.Alignment.center,
+                                child: pw.Row(
+                                  mainAxisSize: pw.MainAxisSize.min,
+                                  mainAxisAlignment: pw.MainAxisAlignment.center,
+                                  children: [
+                                    pw.Text(
+                                      formatPrice(it.price),
+                                      style: const pw.TextStyle(fontSize: 8),
+                                    ),
+                                    if (it.isGstInclusive || RegExp(r'\b(inc[\s.]*gst|inclusive)\b', caseSensitive: false).hasMatch('${it.name} ${it.gstText ?? ''}')) ...[
+                                      pw.SizedBox(width: 2),
+                                      pw.Text(
+                                        '(Inc. GST)',
+                                        style: pw.TextStyle(fontSize: 6, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#15803D')),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
 
                             // NET. AMT
                             if (hasGst)

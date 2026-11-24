@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
@@ -11,7 +10,6 @@ import '../../providers/quotation_provider.dart';
 import '../../providers/customer_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../services/pdf_invoice_service.dart';
-import '../../services/paste_helper.dart';
 import 'widgets/inline_item_card.dart';
 import 'quotation_preview_screen.dart';
 
@@ -371,134 +369,6 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
         );
       }
     }
-  }
-
-  Future<void> _handlePasteListFromClipboard() async {
-    final qp = context.read<QuotationProvider>();
-    final isMachinery = qp.quotationType == 'MACHINERY';
-
-    try {
-      final data = await Clipboard.getData(Clipboard.kTextPlain);
-      final text = data?.text;
-      if (text != null && text.trim().isNotEmpty) {
-        final parsed = PasteHelper.parsePastedText(
-          text,
-          gstMode: qp.gstMode,
-          isMachinery: isMachinery,
-        );
-
-        if (parsed.isNotEmpty) {
-          qp.replaceItemsIfSingleBlank(parsed);
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('✓ ${parsed.length} samaan WhatsApp/Excel list se jud gaye!'),
-                backgroundColor: const Color(0xFF15803D),
-                duration: const Duration(seconds: 2),
-              ),
-            );
-          }
-          return;
-        }
-      }
-    } catch (_) {}
-
-    // Fallback: If clipboard was empty or had only single item, open paste dialog
-    if (mounted) {
-      _showManualPasteDialog();
-    }
-  }
-
-  void _showManualPasteDialog() {
-    final textCtrl = TextEditingController();
-    final qp = context.read<QuotationProvider>();
-    final isMachinery = qp.quotationType == 'MACHINERY';
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 16,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    '📋 Paste WhatsApp / Excel List',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                'WhatsApp, Notes ya Excel se copy ki hui list yahan paste karein:',
-                style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: textCtrl,
-                maxLines: 6,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: '1. Kadchi 2 pcs\n2. Kadai 1 pcs 800\n3. Fry Pan 3 pcs',
-                  hintStyle: const TextStyle(fontSize: 12.5, color: Color(0xFF94A3B8)),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  contentPadding: const EdgeInsets.all(12),
-                ),
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton.icon(
-                onPressed: () {
-                  final text = textCtrl.text;
-                  if (text.trim().isNotEmpty) {
-                    final parsed = PasteHelper.parsePastedText(
-                      text,
-                      gstMode: qp.gstMode,
-                      isMachinery: isMachinery,
-                    );
-                    if (parsed.isNotEmpty) {
-                      qp.replaceItemsIfSingleBlank(parsed);
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('✓ ${parsed.length} samaan jud gaye!'),
-                          backgroundColor: const Color(0xFF15803D),
-                        ),
-                      );
-                      return;
-                    }
-                  }
-                  Navigator.pop(ctx);
-                },
-                icon: const Icon(Icons.check, color: Colors.white),
-                label: const Text('Add Items To Quotation', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF16A34A),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
   }
 
   @override
@@ -1037,31 +907,69 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
               },
             ),
 
-            // 📋 PASTE ITEMS LIST (WhatsApp / Excel / Notes)
+            // 🏷️ Item Discount Toggle (MRP & Less % Columns) - Matches Web Behavior
             InkWell(
-              onTap: _handlePasteListFromClipboard,
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 11),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0FDF4),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF16A34A), width: 1.8),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(Icons.content_paste_rounded, color: Color(0xFF15803D), size: 18),
-                    SizedBox(width: 8),
-                    Text(
-                      '📋 Paste Items List (WhatsApp / Excel)',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF15803D)),
+              onTap: () {
+                final hasAnyDisc = qp.items.any((it) => (it.discountPercent != null && it.discountPercent! > 0));
+                if (hasAnyDisc) {
+                  for (int i = 0; i < qp.items.length; i++) {
+                    final it = qp.items[i];
+                    if ((it.discountPercent ?? 0) > 0 || it.mrp != null) {
+                      final revertRate = (it.mrp != null && it.mrp! > 0) ? it.mrp! : it.price;
+                      qp.updateItem(i, it.copyWith(discountPercent: 0, mrp: null, price: revertRate));
+                    }
+                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Item discounts hata diye gaye'), duration: Duration(seconds: 1)),
+                  );
+                } else {
+                  final targetIdx = qp.items.indexWhere((it) => it.price > 0);
+                  final idx = targetIdx >= 0 ? targetIdx : 0;
+                  if (qp.items.isNotEmpty) {
+                    final curP = qp.items[idx].price > 0 ? qp.items[idx].price : 100.0;
+                    qp.updateItem(idx, qp.items[idx].copyWith(
+                      mrp: curP,
+                      discountPercent: 10.0,
+                      price: curP * 0.9,
+                    ));
+                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('🏷️ MRP aur Less % Columns show ho gaye!'), duration: Duration(seconds: 1)),
+                  );
+                }
+              },
+              borderRadius: BorderRadius.circular(10),
+              child: Builder(
+                builder: (context) {
+                  final hasAnyDisc = qp.items.any((it) => (it.discountPercent != null && it.discountPercent! > 0));
+                  return Container(
+                    padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 12),
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(
+                      color: hasAnyDisc ? const Color(0xFFFEE2E2) : const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: hasAnyDisc ? const Color(0xFFEF4444) : const Color(0xFFFCA5A5),
+                        width: hasAnyDisc ? 1.5 : 1.0,
+                      ),
                     ),
-                  ],
-                ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          hasAnyDisc ? '🏷️ Less % Columns Active (Tap to remove)' : '🏷️ + Item Discount (MRP & Less %)',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.bold,
+                            color: hasAnyDisc ? const Color(0xFFB91C1C) : const Color(0xFFDC2626),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
-            const SizedBox(height: 8),
 
             // CLEAR ACTION BUTTONS BELOW ITEMS (Normal vs Machinery)
             if (isMachinery) ...[
@@ -1097,7 +1005,7 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
                       Icon(Icons.add_circle_outline, color: Color(0xFF1D4ED8), size: 18),
                       SizedBox(width: 6),
                       Text(
-                        '+ Normal Item Add Karein (Hotelware / Bartan)',
+                        'Normal Item Add Karein (Hotelware / Bartan)',
                         style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF1D4ED8)),
                       ),
                     ],
@@ -1106,7 +1014,7 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
               ),
               const SizedBox(height: 8),
 
-              // 2. + Add Machinery Item (Specs & Size)
+              // 2. Add Machinery Item (Specs & Size)
               InkWell(
                 onTap: () {
                   final lastSec = qp.items.reversed.firstWhere(
@@ -1141,7 +1049,7 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
                       Icon(Icons.add_circle, color: Color(0xFF6D28D9), size: 18),
                       SizedBox(width: 6),
                       Text(
-                        '+ Machinery Item Add Karein (Specs & Size)',
+                        'Machinery Item Add Karein (Specs & Size)',
                         style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Color(0xFF6D28D9)),
                       ),
                     ],
@@ -1150,7 +1058,7 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
               ),
               const SizedBox(height: 8),
             ] else ...[
-              // Standard Mode: + Add Another Item
+              // Standard Mode: Add Another Item
               InkWell(
                 onTap: () => qp.addNewBlankRow(),
                 borderRadius: BorderRadius.circular(12),
@@ -1167,7 +1075,7 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
                       Icon(Icons.add, color: Color(0xFF1D4ED8), size: 18),
                       SizedBox(width: 6),
                       Text(
-                        '+ Add Another Item (सामान जोड़ें)',
+                        'Add Another Item (सामान जोड़ें)',
                         style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFF1D4ED8)),
                       ),
                     ],
@@ -1177,7 +1085,7 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
               const SizedBox(height: 8),
             ],
 
-            // 3. + New Custom Product (नया कस्टम सामान जोड़ें)
+            // 3. New Custom Product (नया कस्टम सामान जोड़ें)
             InkWell(
               onTap: () {
                 final newItem = QuotationItem(
@@ -1206,7 +1114,7 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
                     Icon(Icons.edit, color: Color(0xFFB45309), size: 16),
                     SizedBox(width: 6),
                     Text(
-                      '+ New Custom Product (नया कस्टम सामान जोड़ें)',
+                      'New Custom Product (नया कस्टम सामान जोड़ें)',
                       style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFFB45309)),
                     ),
                   ],
@@ -1398,12 +1306,43 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
                           ),
                           const SizedBox(height: 8),
 
-                          // Special Discount (-₹)
+                          // Special Discount (-₹) with Quick % Pills
                           Row(
                             children: [
-                              const Expanded(
+                              Expanded(
                                 flex: 6,
-                                child: Text('Special Discount (-₹):', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFFDC2626))),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Special Discount (-₹):', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFFDC2626))),
+                                    const SizedBox(height: 4),
+                                    Wrap(
+                                      spacing: 4,
+                                      runSpacing: 4,
+                                      children: [3, 5, 10, 15].map((pct) {
+                                        return InkWell(
+                                          onTap: () {
+                                            final subtotal = qp.totalNetAmt;
+                                            if (subtotal > 0) {
+                                              final disc = (subtotal * pct / 100).round();
+                                              _discountCtrl.text = disc.toString();
+                                              _syncCharges();
+                                            }
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFFEF2F2),
+                                              borderRadius: BorderRadius.circular(4),
+                                              border: Border.all(color: const Color(0xFFFCA5A5)),
+                                            ),
+                                            child: Text('-$pct%', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFDC2626))),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                  ],
+                                ),
                               ),
                               Expanded(
                                 flex: 4,

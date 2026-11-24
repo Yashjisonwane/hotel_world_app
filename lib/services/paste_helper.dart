@@ -239,8 +239,22 @@ class PasteHelper {
       final u = qtyUnitMatch.group(2)!.toLowerCase();
       unit = _normalizeUnit(u);
       line = line.replaceRange(qtyUnitMatch.start, qtyUnitMatch.end, '').trim();
-    } else {
-      // Check for standalone trailing quantity e.g. "Kadchi - 2" or "Kadchi 2"
+    }
+
+    // If price is still 0, check for trailing numeric price (e.g. "Test Plate 10 pcs 1200" or "Kadai 450")
+    if (price == 0.0) {
+      final trailingNum = RegExp(r'[\s\-–—:]+(\d+(?:\.\d{1,2})?)\s*(?:\/-)?$').firstMatch(line);
+      if (trailingNum != null) {
+        final pVal = double.tryParse(trailingNum.group(1)!) ?? 0.0;
+        if (pVal > 0) {
+          price = pVal;
+          line = line.substring(0, trailingNum.start).trim();
+        }
+      }
+    }
+
+    // If quantity is still default 1, check for trailing number as quantity (e.g. "Kadai 5")
+    if (qty == 1.0) {
       final trailingQtyMatch = RegExp(r'[\-–—:\s]+(\d+)\s*$').firstMatch(line);
       if (trailingQtyMatch != null) {
         final parsed = double.tryParse(trailingQtyMatch.group(1)!);

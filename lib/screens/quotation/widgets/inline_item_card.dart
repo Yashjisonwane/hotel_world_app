@@ -47,6 +47,8 @@ class _InlineItemCardState extends State<InlineItemCard> {
   late TextEditingController _qtyCtrl;
   late TextEditingController _priceCtrl;
   late TextEditingController _instCtrl;
+  late TextEditingController _mrpCtrl;
+  late TextEditingController _discCtrl;
 
   late String _unit;
   late double _gstRate;
@@ -75,6 +77,17 @@ class _InlineItemCardState extends State<InlineItemCard> {
     );
     _instCtrl = TextEditingController(
       text: widget.item.installationCharge > 0 ? widget.item.installationCharge.toStringAsFixed(0) : '',
+    );
+    final itMrp = (widget.item.mrp != null && widget.item.mrp! > 0) ? widget.item.mrp! : widget.item.price;
+    _mrpCtrl = TextEditingController(
+      text: itMrp > 0 ? (itMrp == itMrp.roundToDouble() ? itMrp.toInt().toString() : itMrp.toStringAsFixed(2)) : '',
+    );
+    _discCtrl = TextEditingController(
+      text: (widget.item.discountPercent != null && widget.item.discountPercent! > 0)
+          ? (widget.item.discountPercent! == widget.item.discountPercent!.roundToDouble()
+              ? widget.item.discountPercent!.toInt().toString()
+              : widget.item.discountPercent!.toString())
+          : '',
     );
 
     _unit = widget.item.unit.isNotEmpty ? widget.item.unit : 'Pcs';
@@ -122,6 +135,20 @@ class _InlineItemCardState extends State<InlineItemCard> {
     if (oldWidget.item.imageUrl != widget.item.imageUrl) {
       _imageUrl = widget.item.imageUrl;
     }
+    if (oldWidget.item.mrp != widget.item.mrp) {
+      final itMrp = widget.item.mrp ?? widget.item.price;
+      _mrpCtrl.text = itMrp > 0 ? (itMrp == itMrp.roundToDouble() ? itMrp.toInt().toString() : itMrp.toStringAsFixed(2)) : '';
+    }
+    if (oldWidget.item.discountPercent != widget.item.discountPercent) {
+      _discCtrl.text = (widget.item.discountPercent != null && widget.item.discountPercent! > 0)
+          ? (widget.item.discountPercent! == widget.item.discountPercent!.roundToDouble()
+              ? widget.item.discountPercent!.toInt().toString()
+              : widget.item.discountPercent!.toString())
+          : '';
+    }
+    if (oldWidget.item.price != widget.item.price && _priceCtrl.text != widget.item.price.toStringAsFixed(2)) {
+      _priceCtrl.text = widget.item.price > 0 ? widget.item.price.toStringAsFixed(2) : '';
+    }
   }
 
   @override
@@ -135,6 +162,8 @@ class _InlineItemCardState extends State<InlineItemCard> {
     _qtyCtrl.dispose();
     _priceCtrl.dispose();
     _instCtrl.dispose();
+    _mrpCtrl.dispose();
+    _discCtrl.dispose();
     super.dispose();
   }
 
@@ -149,6 +178,8 @@ class _InlineItemCardState extends State<InlineItemCard> {
     final qty = double.tryParse(_qtyCtrl.text.trim()) ?? 1.0;
     final price = double.tryParse(_priceCtrl.text.trim()) ?? 0.0;
     final inst = double.tryParse(_instCtrl.text.trim()) ?? 0.0;
+    final disc = double.tryParse(_discCtrl.text.trim());
+    final mrpVal = double.tryParse(_mrpCtrl.text.trim());
 
     final updated = widget.item.copyWith(
       serialNumber: widget.index + 1,
@@ -159,6 +190,8 @@ class _InlineItemCardState extends State<InlineItemCard> {
       quantity: qty,
       unit: _unit,
       price: price,
+      mrp: mrpVal,
+      discountPercent: disc,
       gstRate: _gstRate,
       isGstAdded: _isGstAdded,
       installationCharge: inst,
@@ -217,9 +250,35 @@ class _InlineItemCardState extends State<InlineItemCard> {
             );
           }
         } else {
-          _nameCtrl.text = text.trim();
-          _notifyChange();
-          _onNameChanged(text.trim());
+          final parsed = PasteHelper.parsePastedText(
+            text,
+            gstMode: widget.gstMode,
+            isMachinery: widget.isMachinery,
+            defaultSection: widget.item.section,
+          );
+          if (parsed.isNotEmpty) {
+            final first = parsed.first;
+            setState(() {
+              _nameCtrl.text = first.name;
+              _qtyCtrl.text = _formatNumber(first.quantity);
+              _unit = first.unit;
+              if (first.price > 0) _priceCtrl.text = first.price.toStringAsFixed(2);
+            });
+            _notifyChange();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('✓ Samaan paste ho gaya!'),
+                  backgroundColor: Color(0xFF15803D),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
+          } else {
+            _nameCtrl.text = text.trim();
+            _notifyChange();
+            _onNameChanged(text.trim());
+          }
         }
       } else {
         if (mounted) {
@@ -1091,148 +1150,380 @@ class _InlineItemCardState extends State<InlineItemCard> {
 
                 const SizedBox(height: 8),
 
-                // 3-COLUMN ROW: QTY | UNIT | UNIT RATE (₹) (Exact matching Screenshot 3)
-                Row(
-                  children: [
-                    // Qty
-                    Expanded(
-                      flex: 3,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('QTY:', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF475569))),
-                          const SizedBox(height: 3),
-                          TextField(
-                            controller: _qtyCtrl,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            textAlign: TextAlign.center,
-                            onChanged: (_) => _notifyChange(),
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-                            decoration: InputDecoration(
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                              isDense: true,
-                              fillColor: AppColors.white,
-                              filled: true,
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5)),
-                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5)),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-
-                    // Unit
-                    Expanded(
-                      flex: 3,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('UNIT:', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF475569))),
-                          const SizedBox(height: 3),
-                          Container(
-                            height: 38,
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            decoration: BoxDecoration(
-                              color: AppColors.white,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: const Color(0xFFCBD5E1), width: 1.5),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                value: ['Pcs', 'Box', 'Ltr', 'Kg', 'Gm', 'Dzn', 'Pkt', 'Set', 'Nos', 'Mtr'].contains(_unit) ? _unit : 'Pcs',
-                                isExpanded: true,
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
-                                items: ['Pcs', 'Box', 'Ltr', 'Kg', 'Gm', 'Dzn', 'Pkt', 'Set', 'Nos', 'Mtr']
-                                    .map((u) => DropdownMenuItem(value: u, child: Text(u)))
-                                    .toList(),
-                                onChanged: (val) {
-                                  if (val != null) {
-                                    setState(() => _unit = val);
-                                    _notifyChange();
-                                  }
-                                },
+                // 3-COLUMN ROW: QTY | UNIT | RATE (OR MRP | LESS % | NET RATE when discount > 0)
+                if (widget.item.discountPercent != null && widget.item.discountPercent! > 0) ...[
+                  Row(
+                    children: [
+                      // MRP
+                      Expanded(
+                        flex: 3,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('MRP (₹):', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF475569))),
+                            const SizedBox(height: 3),
+                            TextField(
+                              controller: _mrpCtrl,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              textAlign: TextAlign.right,
+                              onChanged: (val) {
+                                final mrpVal = double.tryParse(val.trim()) ?? 0.0;
+                                final dVal = double.tryParse(_discCtrl.text.trim()) ?? 0.0;
+                                if (mrpVal > 0 && dVal > 0) {
+                                  final newNet = mrpVal * (1 - dVal / 100);
+                                  _priceCtrl.text = newNet.toStringAsFixed(2);
+                                }
+                                _notifyChange();
+                              },
+                              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                              decoration: InputDecoration(
+                                hintText: '0.00',
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                                isDense: true,
+                                fillColor: AppColors.white,
+                                filled: true,
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5)),
+                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5)),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
+                      const SizedBox(width: 6),
 
-                    // Unit Rate (₹)
-                    Expanded(
-                      flex: 4,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('RATE (₹):', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF475569))),
-                              InkWell(
-                                onTap: () {
-                                  setState(() {
-                                    widget.item.isGstInclusive = !widget.item.isGstInclusive;
-                                  });
+                      // LESS %
+                      Expanded(
+                        flex: 3,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('LESS %:', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFFDC2626))),
+                            const SizedBox(height: 3),
+                            TextField(
+                              controller: _discCtrl,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              textAlign: TextAlign.center,
+                              onChanged: (val) {
+                                final dVal = double.tryParse(val.trim()) ?? 0.0;
+                                final mrpVal = double.tryParse(_mrpCtrl.text.trim()) ?? (widget.item.mrp ?? widget.item.price);
+                                if (dVal == 0.0 || val.trim().isEmpty) {
+                                  _priceCtrl.text = mrpVal.toStringAsFixed(2);
+                                  widget.onChanged(widget.item.copyWith(
+                                    discountPercent: 0,
+                                    mrp: null,
+                                    price: mrpVal,
+                                  ));
+                                } else {
+                                  final newNet = mrpVal * (1 - dVal / 100);
+                                  _priceCtrl.text = newNet.toStringAsFixed(2);
                                   _notifyChange();
-                                },
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    SizedBox(
-                                      width: 14,
-                                      height: 14,
-                                      child: Checkbox(
-                                        value: widget.item.isGstInclusive || RegExp(r'\binc[\s.]*gst\b', caseSensitive: false).hasMatch(widget.item.name),
-                                        onChanged: (val) {
-                                          setState(() {
-                                            widget.item.isGstInclusive = val ?? false;
-                                          });
-                                          _notifyChange();
-                                        },
-                                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                        activeColor: const Color(0xFF15803D),
+                                }
+                              },
+                              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900, color: Color(0xFFDC2626)),
+                              decoration: InputDecoration(
+                                prefixText: '−',
+                                prefixStyle: const TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.w900),
+                                suffixText: '%',
+                                suffixStyle: const TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.w900, fontSize: 11),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                                isDense: true,
+                                fillColor: const Color(0xFFFEF2F2),
+                                filled: true,
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFFCA5A5), width: 1.5)),
+                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFFCA5A5), width: 1.5)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+
+                      // NET RATE (₹)
+                      Expanded(
+                        flex: 4,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('NET RATE (₹):', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFF15803D))),
+                                InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      widget.item.isGstInclusive = !widget.item.isGstInclusive;
+                                    });
+                                    _notifyChange();
+                                  },
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: Checkbox(
+                                          value: widget.item.isGstInclusive || RegExp(r'\binc[\s.]*gst\b', caseSensitive: false).hasMatch(widget.item.name),
+                                          onChanged: (val) {
+                                            setState(() {
+                                              widget.item.isGstInclusive = val ?? false;
+                                            });
+                                            _notifyChange();
+                                          },
+                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                          activeColor: const Color(0xFF15803D),
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Text(
-                                      'Inc. GST',
-                                      style: TextStyle(
-                                        fontSize: 9.5,
-                                        fontWeight: FontWeight.bold,
-                                        color: (widget.item.isGstInclusive || RegExp(r'\binc[\s.]*gst\b', caseSensitive: false).hasMatch(widget.item.name))
-                                            ? const Color(0xFF15803D)
-                                            : const Color(0xFF64748B),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        'Inc. GST',
+                                        style: TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.bold,
+                                          color: (widget.item.isGstInclusive || RegExp(r'\binc[\s.]*gst\b', caseSensitive: false).hasMatch(widget.item.name))
+                                              ? const Color(0xFF15803D)
+                                              : const Color(0xFF64748B),
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            TextField(
+                              controller: _priceCtrl,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              textAlign: TextAlign.right,
+                              onChanged: (_) => _notifyChange(),
+                              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                              decoration: InputDecoration(
+                                hintText: '0.00',
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                                isDense: true,
+                                fillColor: AppColors.white,
+                                filled: true,
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5)),
+                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      // Qty
+                      Expanded(
+                        flex: 1,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('QTY:', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF475569))),
+                            const SizedBox(height: 3),
+                            TextField(
+                              controller: _qtyCtrl,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              textAlign: TextAlign.center,
+                              onChanged: (_) => _notifyChange(),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                              decoration: InputDecoration(
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                                isDense: true,
+                                fillColor: AppColors.white,
+                                filled: true,
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5)),
+                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // Unit
+                      Expanded(
+                        flex: 1,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('UNIT:', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF475569))),
+                            const SizedBox(height: 3),
+                            Container(
+                              height: 38,
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              decoration: BoxDecoration(
+                                color: AppColors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFFCBD5E1), width: 1.5),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: ['Pcs', 'Box', 'Ltr', 'Kg', 'Gm', 'Dzn', 'Pkt', 'Set', 'Nos', 'Mtr'].contains(_unit) ? _unit : 'Pcs',
+                                  isExpanded: true,
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                                  items: ['Pcs', 'Box', 'Ltr', 'Kg', 'Gm', 'Dzn', 'Pkt', 'Set', 'Nos', 'Mtr']
+                                      .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                                      .toList(),
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      setState(() => _unit = val);
+                                      _notifyChange();
+                                    }
+                                  },
                                 ),
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 3),
-                          TextField(
-                            controller: _priceCtrl,
-                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                            textAlign: TextAlign.right,
-                            onChanged: (_) => _notifyChange(),
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-                            decoration: InputDecoration(
-                              hintText: '0.00',
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                              isDense: true,
-                              fillColor: AppColors.white,
-                              filled: true,
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5)),
-                              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5)),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                ] else ...[
+                  // Standard Row: Qty | Unit | Unit Rate
+                  Row(
+                    children: [
+                      // Qty
+                      Expanded(
+                        flex: 3,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('QTY:', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF475569))),
+                            const SizedBox(height: 3),
+                            TextField(
+                              controller: _qtyCtrl,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              textAlign: TextAlign.center,
+                              onChanged: (_) => _notifyChange(),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                              decoration: InputDecoration(
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                                isDense: true,
+                                fillColor: AppColors.white,
+                                filled: true,
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5)),
+                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // Unit
+                      Expanded(
+                        flex: 3,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('UNIT:', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF475569))),
+                            const SizedBox(height: 3),
+                            Container(
+                              height: 38,
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              decoration: BoxDecoration(
+                                color: AppColors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFFCBD5E1), width: 1.5),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: ['Pcs', 'Box', 'Ltr', 'Kg', 'Gm', 'Dzn', 'Pkt', 'Set', 'Nos', 'Mtr'].contains(_unit) ? _unit : 'Pcs',
+                                  isExpanded: true,
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                                  items: ['Pcs', 'Box', 'Ltr', 'Kg', 'Gm', 'Dzn', 'Pkt', 'Set', 'Nos', 'Mtr']
+                                      .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                                      .toList(),
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      setState(() => _unit = val);
+                                      _notifyChange();
+                                    }
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // Unit Rate (₹)
+                      Expanded(
+                        flex: 4,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('RATE (₹):', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF475569))),
+                                InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      widget.item.isGstInclusive = !widget.item.isGstInclusive;
+                                    });
+                                    _notifyChange();
+                                  },
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SizedBox(
+                                        width: 14,
+                                        height: 14,
+                                        child: Checkbox(
+                                          value: widget.item.isGstInclusive || RegExp(r'\binc[\s.]*gst\b', caseSensitive: false).hasMatch(widget.item.name),
+                                          onChanged: (val) {
+                                            setState(() {
+                                              widget.item.isGstInclusive = val ?? false;
+                                            });
+                                            _notifyChange();
+                                          },
+                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                          activeColor: const Color(0xFF15803D),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        'Inc. GST',
+                                        style: TextStyle(
+                                          fontSize: 9.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: (widget.item.isGstInclusive || RegExp(r'\binc[\s.]*gst\b', caseSensitive: false).hasMatch(widget.item.name))
+                                              ? const Color(0xFF15803D)
+                                              : const Color(0xFF64748B),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            TextField(
+                              controller: _priceCtrl,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              textAlign: TextAlign.right,
+                              onChanged: (_) => _notifyChange(),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                              decoration: InputDecoration(
+                                hintText: '0.00',
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                isDense: true,
+                                fillColor: AppColors.white,
+                                filled: true,
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5)),
+                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
 
                 const SizedBox(height: 8),
 
@@ -1292,6 +1583,77 @@ class _InlineItemCardState extends State<InlineItemCard> {
                           ),
                         ),
                       ),
+                      // Item Discount Quick Pills (Matches Web)
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Disc:',
+                        style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w800, color: Color(0xFFDC2626)),
+                      ),
+                      for (final d in [5.0, 10.0, 15.0, 20.0])
+                        InkWell(
+                          onTap: () {
+                            final currentP = double.tryParse(_priceCtrl.text) ?? widget.item.price;
+                            if (currentP <= 0) return;
+                            final baseMrp = (widget.item.mrp != null && widget.item.mrp! > 0) ? widget.item.mrp! : currentP;
+                            final newNet = baseMrp * (1 - d / 100);
+                            _mrpCtrl.text = baseMrp.toStringAsFixed(2);
+                            _discCtrl.text = d.toInt().toString();
+                            _priceCtrl.text = newNet.toStringAsFixed(2);
+                            widget.onChanged(widget.item.copyWith(
+                              mrp: baseMrp,
+                              discountPercent: d,
+                              price: newNet,
+                            ));
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: (widget.item.discountPercent == d) ? const Color(0xFFDC2626) : const Color(0xFFFEF2F2),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: const Color(0xFFFCA5A5)),
+                            ),
+                            child: Text(
+                              '-${d.toInt()}%',
+                              style: TextStyle(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w900,
+                                color: (widget.item.discountPercent == d) ? Colors.white : const Color(0xFFDC2626),
+                              ),
+                            ),
+                          ),
+                        ),
+                      if ((widget.item.discountPercent ?? 0) > 0)
+                        InkWell(
+                          onTap: () {
+                            final baseRate = widget.item.mrp ?? widget.item.price;
+                            _discCtrl.text = '';
+                            _priceCtrl.text = baseRate.toStringAsFixed(2);
+                            widget.onChanged(widget.item.copyWith(
+                              discountPercent: 0,
+                              mrp: null,
+                              price: baseRate,
+                            ));
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEE2E2),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: const Color(0xFFEF4444)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'MRP ₹${(widget.item.mrp ?? widget.item.price).toStringAsFixed(0)} Less ${(widget.item.discountPercent ?? 0).toStringAsFixed(0)}%',
+                                  style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w900, color: Color(0xFFB91C1C)),
+                                ),
+                                const SizedBox(width: 3),
+                                const Icon(Icons.close, size: 10, color: Color(0xFFB91C1C)),
+                              ],
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
