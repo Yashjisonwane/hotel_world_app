@@ -45,6 +45,8 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
   bool _isInitialized = false;
   bool _isCustomerCardOpen = true;
   bool _isChargesCardOpen = true;
+  bool _showOnlyUnpriced = false;
+  Set<QuotationItem> _unpricedSnapshotItems = {};
 
   @override
   void didChangeDependencies() {
@@ -879,6 +881,56 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
                           ),
                         ),
                       ),
+                      Builder(
+                        builder: (ctx) {
+                          final unpricedCount = qp.items.where((it) => (it.price == 0 || it.price == 0.0) && it.name.trim().isNotEmpty).length;
+                          if (unpricedCount == 0 && !_showOnlyUnpriced) return const SizedBox.shrink();
+                          return Padding(
+                            padding: const EdgeInsets.only(left: 6),
+                            child: InkWell(
+                              onTap: () {
+                                setState(() {
+                                  _showOnlyUnpriced = !_showOnlyUnpriced;
+                                  if (_showOnlyUnpriced) {
+                                    _unpricedSnapshotItems = qp.items
+                                        .where((it) => (it.price == 0 || it.price == 0.0) && it.name.trim().isNotEmpty)
+                                        .toSet();
+                                  } else {
+                                    _unpricedSnapshotItems.clear();
+                                  }
+                                });
+                              },
+                              borderRadius: BorderRadius.circular(20),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: _showOnlyUnpriced ? const Color(0xFFFEF2F2) : const Color(0xFFFEFCE8),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: _showOnlyUnpriced ? const Color(0xFFDC2626) : const Color(0xFFEAB308),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.warning_amber_rounded, size: 12, color: _showOnlyUnpriced ? const Color(0xFFB91C1C) : const Color(0xFF854D0E)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _showOnlyUnpriced ? '✓ Saare Dikhayein' : 'Bina Rate ($unpricedCount)',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w800,
+                                        color: _showOnlyUnpriced ? const Color(0xFFB91C1C) : const Color(0xFF854D0E),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ],
@@ -892,6 +944,10 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
               itemCount: qp.items.length,
               itemBuilder: (ctx, idx) {
                 final it = qp.items[idx];
+                final isUnpricedNow = (it.price == 0 || it.price == 0.0) && it.name.trim().isNotEmpty;
+                if (_showOnlyUnpriced && !(_unpricedSnapshotItems.contains(it) || isUnpricedNow)) {
+                  return const SizedBox.shrink();
+                }
                 final hasAnyDisc = qp.items.any((x) => (x.discountPercent != null && x.discountPercent! > 0) || (x.mrp != null && x.mrp! > 0));
                 return InlineItemCard(
                   key: ValueKey(it.id ?? 'row_$idx'),

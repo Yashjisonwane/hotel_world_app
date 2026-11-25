@@ -557,7 +557,11 @@ class PdfInvoiceService {
                                     if (it.isGstInclusive || RegExp(r'\b(inc[\s.]*gst|inclusive)\b', caseSensitive: false).hasMatch('${it.name} ${it.gstText ?? ''}')) ...[
                                       pw.SizedBox(width: 2),
                                       pw.Text(
-                                        '(Inc. GST)',
+                                        it.gstInclusiveText?.isNotEmpty == true
+                                            ? '(${it.gstInclusiveText})'
+                                            : (it.gstText != null && RegExp(r'\b(5%|12%|18%|28%)\b').hasMatch(it.gstText!)
+                                                ? '(${it.gstRate.toInt()}% Inc. GST)'
+                                                : '(Inc. GST)'),
                                         style: pw.TextStyle(fontSize: 6, fontWeight: pw.FontWeight.bold, color: PdfColor.fromHex('#15803D')),
                                       ),
                                     ],
