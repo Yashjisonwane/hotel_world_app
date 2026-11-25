@@ -1210,8 +1210,80 @@ class _InlineItemCardState extends State<InlineItemCard> {
 
                 const SizedBox(height: 8),
 
-                // 3-COLUMN ROW: QTY | UNIT | RATE (OR MRP | LESS % | NET RATE when discount active on this item)
+                // 3-COLUMN ROW: QTY | UNIT FIRST, then (MRP | LESS % | NET RATE when discount active) or RATE
                 if ((widget.item.discountPercent != null && widget.item.discountPercent! > 0) || (widget.item.mrp != null && widget.item.mrp! > 0 && widget.item.mrp != widget.item.price)) ...[
+                  // 1. QTY & UNIT ROW (Always First)
+                  Row(
+                    children: [
+                      // Qty
+                      Expanded(
+                        flex: 1,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('QTY:', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF475569))),
+                            const SizedBox(height: 3),
+                            TextField(
+                              controller: _qtyCtrl,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              textAlign: TextAlign.center,
+                              onChanged: (_) => _notifyChange(),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
+                              decoration: InputDecoration(
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                                isDense: true,
+                                fillColor: AppColors.white,
+                                filled: true,
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5)),
+                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+
+                      // Unit
+                      Expanded(
+                        flex: 1,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('UNIT:', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF475569))),
+                            const SizedBox(height: 3),
+                            Container(
+                              height: 38,
+                              padding: const EdgeInsets.symmetric(horizontal: 8),
+                              decoration: BoxDecoration(
+                                color: AppColors.white,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: const Color(0xFFCBD5E1), width: 1.5),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: ['Pcs', 'Box', 'Ltr', 'Kg', 'Gm', 'Dzn', 'Pkt', 'Set', 'Nos', 'Mtr'].contains(_unit) ? _unit : 'Pcs',
+                                  isExpanded: true,
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                                  items: ['Pcs', 'Box', 'Ltr', 'Kg', 'Gm', 'Dzn', 'Pkt', 'Set', 'Nos', 'Mtr']
+                                      .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                                      .toList(),
+                                  onChanged: (val) {
+                                    if (val != null) {
+                                      setState(() => _unit = val);
+                                      _notifyChange();
+                                    }
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+
+                  // 2. DISCOUNT PRICING ROW: MRP | LESS % | NET RATE
                   Row(
                     children: [
                       // MRP
@@ -1364,75 +1436,6 @@ class _InlineItemCardState extends State<InlineItemCard> {
                                 filled: true,
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5)),
                                 enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5)),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      // Qty
-                      Expanded(
-                        flex: 1,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('QTY:', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF475569))),
-                            const SizedBox(height: 3),
-                            TextField(
-                              controller: _qtyCtrl,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              textAlign: TextAlign.center,
-                              onChanged: (_) => _notifyChange(),
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Color(0xFF0F172A)),
-                              decoration: InputDecoration(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                                isDense: true,
-                                fillColor: AppColors.white,
-                                filled: true,
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5)),
-                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5)),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-
-                      // Unit
-                      Expanded(
-                        flex: 1,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text('UNIT:', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF475569))),
-                            const SizedBox(height: 3),
-                            Container(
-                              height: 38,
-                              padding: const EdgeInsets.symmetric(horizontal: 8),
-                              decoration: BoxDecoration(
-                                color: AppColors.white,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0xFFCBD5E1), width: 1.5),
-                              ),
-                              child: DropdownButtonHideUnderline(
-                                child: DropdownButton<String>(
-                                  value: ['Pcs', 'Box', 'Ltr', 'Kg', 'Gm', 'Dzn', 'Pkt', 'Set', 'Nos', 'Mtr'].contains(_unit) ? _unit : 'Pcs',
-                                  isExpanded: true,
-                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
-                                  items: ['Pcs', 'Box', 'Ltr', 'Kg', 'Gm', 'Dzn', 'Pkt', 'Set', 'Nos', 'Mtr']
-                                      .map((u) => DropdownMenuItem(value: u, child: Text(u)))
-                                      .toList(),
-                                  onChanged: (val) {
-                                    if (val != null) {
-                                      setState(() => _unit = val);
-                                      _notifyChange();
-                                    }
-                                  },
-                                ),
                               ),
                             ),
                           ],

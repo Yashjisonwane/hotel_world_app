@@ -354,10 +354,10 @@ class PdfInvoiceService {
                                 0: const pw.FixedColumnWidth(24), // S.N.
                                 1: const pw.FixedColumnWidth(42), // PHOTO
                                 2: const pw.FlexColumnWidth(3),   // PARTICULAR
-                                3: const pw.FixedColumnWidth(44), // MRP
-                                4: const pw.FixedColumnWidth(38), // LESS %
-                                5: const pw.FixedColumnWidth(46), // NET RATE
-                                6: const pw.FixedColumnWidth(44), // QTY
+                                3: const pw.FixedColumnWidth(44), // QTY
+                                4: const pw.FixedColumnWidth(44), // MRP
+                                5: const pw.FixedColumnWidth(38), // LESS %
+                                6: const pw.FixedColumnWidth(46), // NET RATE
                                 if (hasGst) ...{
                                   7: const pw.FixedColumnWidth(58), // NET. AMT
                                   8: const pw.FixedColumnWidth(38), // GST%
@@ -367,10 +367,10 @@ class PdfInvoiceService {
                             : {
                                 0: const pw.FixedColumnWidth(26), // S.N.
                                 1: const pw.FlexColumnWidth(3.2), // PARTICULAR
-                                2: const pw.FixedColumnWidth(46), // MRP
-                                3: const pw.FixedColumnWidth(40), // LESS %
-                                4: const pw.FixedColumnWidth(48), // NET RATE
-                                5: const pw.FixedColumnWidth(48), // QTY
+                                2: const pw.FixedColumnWidth(48), // QTY
+                                3: const pw.FixedColumnWidth(46), // MRP
+                                4: const pw.FixedColumnWidth(40), // LESS %
+                                5: const pw.FixedColumnWidth(48), // NET RATE
                                 if (hasGst) ...{
                                   6: const pw.FixedColumnWidth(62), // NET. AMT
                                   7: const pw.FixedColumnWidth(38), // GST%
@@ -410,10 +410,10 @@ class PdfInvoiceService {
                           if (isPhotoMode) _buildTh('PHOTO', align: pw.TextAlign.center),
                           _buildTh('PARTICULAR', align: pw.TextAlign.left),
                           if (hasItemDiscounts) ...[
+                            _buildTh('QTY', align: pw.TextAlign.center),
                             _buildTh('MRP', align: pw.TextAlign.center),
                             _buildTh('LESS %', align: pw.TextAlign.center),
                             _buildTh('NET RATE', align: pw.TextAlign.center),
-                            _buildTh('QTY', align: pw.TextAlign.center),
                           ] else ...[
                             _buildTh('QTY', align: pw.TextAlign.center),
                             _buildTh('PRICE', align: pw.TextAlign.center),
@@ -485,8 +485,17 @@ class PdfInvoiceService {
                               ),
                             ),
 
-                            // Columns: MRP, LESS %, NET RATE, QTY or standard QTY, PRICE
+                            // Columns: QTY, then MRP, LESS %, NET RATE or standard QTY, PRICE
                             if (hasItemDiscounts) ...[
+                              // QTY (Always First)
+                              pw.Container(
+                                padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                                alignment: pw.Alignment.center,
+                                child: pw.Text(
+                                  '${it.quantity == it.quantity.roundToDouble() ? it.quantity.toInt() : it.quantity} ${it.unit}',
+                                  style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+                                ),
+                              ),
                               // MRP
                               pw.Container(
                                 padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 2),
@@ -519,15 +528,6 @@ class PdfInvoiceService {
                                 alignment: pw.Alignment.center,
                                 child: pw.Text(
                                   formatPrice(it.price),
-                                  style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
-                                ),
-                              ),
-                              // QTY
-                              pw.Container(
-                                padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-                                alignment: pw.Alignment.center,
-                                child: pw.Text(
-                                  '${it.quantity == it.quantity.roundToDouble() ? it.quantity.toInt() : it.quantity} ${it.unit}',
                                   style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
                                 ),
                               ),
