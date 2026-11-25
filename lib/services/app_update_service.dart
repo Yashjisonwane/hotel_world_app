@@ -7,8 +7,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../constants/app_colors.dart';
 
 class AppUpdateService {
-  static const String currentVersion = '1.0.25';
-  static const int currentBuildNumber = 26;
+  static const String currentVersion = '1.0.26';
+  static const int currentBuildNumber = 27;
   static const String githubRepo = 'Yashjisonwane/hotel_world_app';
 
   /// Checks GitHub Releases for the latest version of Hotel World App

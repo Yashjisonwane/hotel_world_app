@@ -166,7 +166,9 @@ class QuotationItem {
     double? purchasePrice,
     double? marginPercent,
     double? mrp,
+    bool clearMrp = false,
     double? discountPercent,
+    bool clearDiscount = false,
   }) {
     return QuotationItem(
       id: id ?? this.id,
@@ -194,8 +196,8 @@ class QuotationItem {
       hsnCode: hsnCode ?? this.hsnCode,
       purchasePrice: purchasePrice ?? this.purchasePrice,
       marginPercent: marginPercent ?? this.marginPercent,
-      mrp: mrp ?? this.mrp,
-      discountPercent: discountPercent ?? this.discountPercent,
+      mrp: clearMrp ? null : (mrp ?? this.mrp),
+      discountPercent: clearDiscount ? null : (discountPercent ?? this.discountPercent),
     );
   }
 }

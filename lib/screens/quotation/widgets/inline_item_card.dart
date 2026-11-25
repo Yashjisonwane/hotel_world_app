@@ -1341,8 +1341,9 @@ class _InlineItemCardState extends State<InlineItemCard> {
                                 if (dVal == 0.0 || val.trim().isEmpty) {
                                   _priceCtrl.text = mrpVal.toStringAsFixed(2);
                                   widget.onChanged(widget.item.copyWith(
+                                    clearDiscount: true,
+                                    clearMrp: true,
                                     discountPercent: 0,
-                                    mrp: null,
                                     price: mrpVal,
                                   ));
                                 } else {

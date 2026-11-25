@@ -178,20 +178,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: _buildStatCard(
-                      title: 'Total Quotes',
-                      value: quoteProv.totalCount.toString(),
-                      icon: Icons.description_outlined,
-                      color: AppColors.info,
+                    child: InkWell(
+                      onTap: () {
+                        final qp = context.read<QuotationProvider>();
+                        qp.setStatusFilter('ALL');
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const QuotationListScreen()),
+                        );
+                      },
+                      child: _buildStatCard(
+                        title: 'Total Quotes',
+                        value: quoteProv.totalCount.toString(),
+                        icon: Icons.description_outlined,
+                        color: AppColors.info,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildStatCard(
-                      title: 'Catalog Items',
-                      value: prodProv.totalCount.toString(),
-                      icon: Icons.inventory_2_outlined,
-                      color: AppColors.primary600,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ProductCatalogScreen()),
+                        );
+                      },
+                      child: _buildStatCard(
+                        title: 'Catalog Items',
+                        value: prodProv.totalCount.toString(),
+                        icon: Icons.inventory_2_outlined,
+                        color: AppColors.primary600,
+                      ),
                     ),
                   ),
                 ],
@@ -217,11 +235,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildStatCard(
-                      title: 'Active Drafts',
-                      value: quoteProv.quotations.where((q) => q.status == 'ACTIVE').length.toString(),
-                      icon: Icons.pending_actions_outlined,
-                      color: AppColors.warning,
+                    child: InkWell(
+                      onTap: () {
+                        final qp = context.read<QuotationProvider>();
+                        qp.setStatusFilter('ACTIVE');
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const QuotationListScreen()),
+                        );
+                      },
+                      child: _buildStatCard(
+                        title: 'Active Quotes',
+                        value: quoteProv.quotations.where((q) => q.status == 'ACTIVE').length.toString(),
+                        icon: Icons.assignment_turned_in_outlined,
+                        color: AppColors.primary600,
+                      ),
                     ),
                   ),
                 ],

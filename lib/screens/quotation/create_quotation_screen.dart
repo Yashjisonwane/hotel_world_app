@@ -917,7 +917,12 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
                   for (int i = 0; i < qp.items.length; i++) {
                     final it = qp.items[i];
                     final revertRate = (it.mrp != null && it.mrp! > 0) ? it.mrp! : it.price;
-                    qp.updateItem(i, it.copyWith(discountPercent: 0, mrp: null, price: revertRate));
+                    qp.updateItem(i, it.copyWith(
+                      clearDiscount: true,
+                      clearMrp: true,
+                      discountPercent: 0,
+                      price: revertRate,
+                    ));
                   }
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Item discounts hata diye gaye'), duration: Duration(seconds: 1)),
