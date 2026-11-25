@@ -174,11 +174,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               const SizedBox(height: 18),
 
-              // KPI Stats Grid
+              // KPI Stats Grid (3 Clean Cards matching Web Dashboard)
               Row(
                 children: [
                   Expanded(
                     child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
                       onTap: () {
                         final qp = context.read<QuotationProvider>();
                         qp.setStatusFilter('ALL');
@@ -198,27 +199,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const ProductCatalogScreen()),
-                        );
-                      },
-                      child: _buildStatCard(
-                        title: 'Catalog Items',
-                        value: prodProv.totalCount.toString(),
-                        icon: Icons.inventory_2_outlined,
-                        color: AppColors.primary600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
                       onTap: () {
                         Navigator.push(
                           context,
@@ -233,26 +214,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: InkWell(
-                      onTap: () {
-                        final qp = context.read<QuotationProvider>();
-                        qp.setStatusFilter('ACTIVE');
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const QuotationListScreen()),
-                        );
-                      },
-                      child: _buildStatCard(
-                        title: 'Active Quotes',
-                        value: quoteProv.quotations.where((q) => q.status == 'ACTIVE').length.toString(),
-                        icon: Icons.assignment_turned_in_outlined,
-                        color: AppColors.primary600,
-                      ),
-                    ),
-                  ),
                 ],
+              ),
+              const SizedBox(height: 12),
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ProductCatalogScreen()),
+                  );
+                },
+                child: _buildStatCard(
+                  title: 'Catalog Items',
+                  value: prodProv.totalCount.toString(),
+                  icon: Icons.inventory_2_outlined,
+                  color: AppColors.primary600,
+                ),
               ),
               const SizedBox(height: 24),
 

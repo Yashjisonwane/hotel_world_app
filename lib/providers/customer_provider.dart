@@ -18,7 +18,19 @@ class CustomerProvider extends ChangeNotifier {
       final raw = StorageService.getString(StorageService.cacheCustomersKey);
       if (raw != null && raw.isNotEmpty) {
         final List list = jsonDecode(raw);
-        _customers = list.map((c) => Customer.fromJson(Map<String, dynamic>.from(c))).toList();
+        final loaded = list.map((c) => Customer.fromJson(Map<String, dynamic>.from(c))).toList();
+        final uniqueCusts = <Customer>[];
+        final seen = <String>{};
+        for (final c in loaded) {
+          final key = (c.companyName.isNotEmpty ? c.companyName : (c.contactPerson ?? '')).trim().toLowerCase();
+          if (key.isNotEmpty && !seen.contains(key)) {
+            seen.add(key);
+            uniqueCusts.add(c);
+          } else if (key.isEmpty) {
+            uniqueCusts.add(c);
+          }
+        }
+        _customers = uniqueCusts;
       }
     } catch (_) {}
   }
@@ -41,7 +53,18 @@ class CustomerProvider extends ChangeNotifier {
 
     try {
       final fresh = await _apiService.getCustomers(search: query);
-      _customers = fresh;
+      final uniqueCusts = <Customer>[];
+      final seen = <String>{};
+      for (final c in fresh) {
+        final key = (c.companyName.isNotEmpty ? c.companyName : (c.contactPerson ?? '')).trim().toLowerCase();
+        if (key.isNotEmpty && !seen.contains(key)) {
+          seen.add(key);
+          uniqueCusts.add(c);
+        } else if (key.isEmpty) {
+          uniqueCusts.add(c);
+        }
+      }
+      _customers = uniqueCusts;
       if (query == null || query.isEmpty) {
         _syncCache();
       }

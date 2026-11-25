@@ -189,7 +189,7 @@ class QuotationProvider extends ChangeNotifier {
     try {
       final res = await _apiService.getQuotations(
         page: _currentPage,
-        limit: 30,
+        limit: 100,
         search: _searchQuery,
         status: _selectedStatus,
       );
